@@ -25,6 +25,4 @@ serde_json = "1.0.39"
 sentry = "0.15.4"
 sentry-actix = "0.15.4"
 log = "0.4.6"
-http = "0.1.17" # for kube api
-url = "1.7.2" # for kube api
 env_logger = "0.6.1"

@@ -12,7 +12,7 @@ Custom resources installed in cluster:
 
 ```sh
 kubectl apply -f yaml/examplecrd.yaml
-kubectl apply -f yaml/crd-baz.yaml
+kubectl apply -f yaml/crd-qux.yaml
 ```
 
 Then you can run this by impersonating the `foobar` service account in `kube-system`.
@@ -24,22 +24,29 @@ Then you can run this by impersonating the `foobar` service account in `kube-sys
 cargo run
 ```
 
+You can inspect the state via `curl`:
+
+```sh
+curl localhost:8080/
+{"qux":{"name":"baz","info":"this is baz"}}
+```
+
 Then you can try to remove a `foo`:
 
 ```sh
-kubectl delete foo baz
+kubectl delete foo qux
 ```
 
 and watch that the reflector picks up on in:
 
 ```
-[2019-04-28T22:03:08Z INFO  operator::kube] Removing service baz
+[2019-04-28T22:03:08Z INFO  operator::kube] Removing service qux
 ```
 
 ditto if you try to apply one:
 
 ```sh
-kubectl apply -f yaml/crd-qux.yaml
+kubectl apply -f yaml/crd-baz.yaml
 ```
 
 ```

@@ -3,11 +3,6 @@ use std::env;
 use log::{info, warn, error, debug, trace};
 pub use operator::*;
 
-// Web server interface
-//use actix_web::{
-//    server, App, Path, Responder, HttpRequest, HttpResponse, middleware,
-//    http::{header, Method, StatusCode},
-//};
 use actix_web::{
   web::{self, Data},
   App, HttpServer, HttpRequest, HttpResponse, Responder, middleware,
@@ -15,8 +10,8 @@ use actix_web::{
 
 
 fn index(state: Data<State>, req: HttpRequest) -> HttpResponse {
-    //let mfs = req.state().get_manifests()?;
-    HttpResponse::Ok().json("hi")
+    let foos = state.foos().unwrap().data;
+    HttpResponse::Ok().json(foos)
 }
 
 fn health(_: HttpRequest) -> HttpResponse {

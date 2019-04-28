@@ -20,9 +20,11 @@ use crate::*;
 
 /// Approximation of the CRD we want to work with
 /// Replace with own struct.
-#[derive(Debug, Deserialize, Clone)]
+/// Add serialize for returnability.
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct FooResource {
   name: String,
+  info: String,
 }
 use std::fmt::Debug;
 impl Named for FooResource {
