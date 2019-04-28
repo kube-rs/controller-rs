@@ -1,0 +1,30 @@
+[package]
+name = "operator"
+version = "0.1.0"
+authors = ["clux"]
+edition = "2018"
+
+[[bin]]
+doc = false
+name = "operator"
+path = "src/main.rs"
+
+[lib]
+name = "operator"
+path = "src/lib.rs"
+
+[dependencies]
+#kubernetes = { git = "https://github.com/clux/kubernetes-rust", rev = "8cb42b0eadf230ef519335fc071f74f187a11fae" }
+kubernetes = { path = "../kubernetes-rust" }
+actix-web = "1.0.0-beta.2"
+actix = "0.8.1"
+serde = "1.0.90"
+serde_derive = "1.0.90"
+failure = "0.1.5"
+serde_json = "1.0.39"
+sentry = "0.15.4"
+sentry-actix = "0.15.4"
+log = "0.4.6"
+http = "0.1.17" # for kube api
+url = "1.7.2" # for kube api
+env_logger = "0.6.1"
