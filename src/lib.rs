@@ -12,6 +12,3 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// State machinery for actix
 pub mod state;
 pub use state::State;
-
-
-pub mod kube;
