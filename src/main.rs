@@ -37,7 +37,7 @@ fn main() {
     }.expect("Failed to load kube config");
     let shared_state = state::init(cfg).unwrap(); // crash if init fails
 
-    let sys = actix::System::new("raftcat");
+    let sys = actix::System::new("operator");
     HttpServer::new(move || {
         App::new()
             .data(shared_state.clone())
