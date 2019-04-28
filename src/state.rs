@@ -1,4 +1,3 @@
-use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use failure::err_msg;
 use log::{info, warn, error, debug, trace};
@@ -6,14 +5,12 @@ use log::{info, warn, error, debug, trace};
 use kubernetes::{
     client::APIClient,
     config::Configuration,
-    api::{Named, Cache, Reflector, ResourceMap, ApiResource},
+    api::{Named, Cache, Reflector, ApiResource},
 };
 
 use std::{
-    collections::BTreeMap,
     env,
-    sync::{Arc, RwLock},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use crate::*;
@@ -26,7 +23,6 @@ pub struct FooResource {
   name: String,
   info: String,
 }
-use std::fmt::Debug;
 impl Named for FooResource {
     // we want Foo identified by self.name in the cache
     fn name(&self) -> String {
@@ -34,15 +30,14 @@ impl Named for FooResource {
     }
 }
 
-
-
-// User state
+/// User state for Actix
 #[derive(Clone)]
 pub struct State {
     // Add resources you need in here
     foos: Reflector<FooResource>,
 }
 
+// Base machinery
 impl State {
     fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").expect("Need NAMESPACE evar");

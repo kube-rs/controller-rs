@@ -5,6 +5,7 @@ A kubernetes operator using reflectors in rust.
 A kube cluster with access to read crds:
 
 ```sh
+export NAMESPACE=kube-system # or edit yaml
 kubectl apply -f yaml/access.yaml
 ```
 
