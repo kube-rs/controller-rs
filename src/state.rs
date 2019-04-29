@@ -2,7 +2,7 @@ use log::{info, warn, error, debug, trace};
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Named, Cache, Reflector, ApiResource},
+    api::{Named, Reflector, ResourceMap, ApiResource},
 };
 use std::{
     env,
@@ -56,7 +56,7 @@ impl State {
         self.foos.refresh()
     }
     /// Exposed getter for read access to state for app
-    pub fn foos(&self) -> Result<Cache<FooResource>> {
+    pub fn foos(&self) -> Result<ResourceMap<FooResource>> {
         self.foos.read()
     }
 }

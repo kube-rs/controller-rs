@@ -9,7 +9,7 @@ use actix_web::{
 };
 
 fn index(state: Data<State>, req: HttpRequest) -> HttpResponse {
-    let foos = state.foos().unwrap().data;
+    let foos = state.foos().unwrap();
     HttpResponse::Ok().json(foos)
 }
 
@@ -30,7 +30,7 @@ fn main() {
         "/root" => kube::config::incluster_config(),
         _ => kube::config::load_kube_config(),
     }.expect("Failed to load kube config");
-    let shared_state = state::init(cfg).unwrap();
+    let shared_state = state::init(cfg).expect("Failed to initialize reflectors");
 
     // Web server
     let sys = actix::System::new("operator");

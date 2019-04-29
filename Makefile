@@ -7,6 +7,16 @@ SHELL := /bin/bash
 run:
 	cargo run
 
+compile:
+	docker run --rm \
+		-v cargo-cache:/root/.cargo \
+		-v $$PWD:/volume \
+		-w /volume \
+		-it clux/muslrust:stable \
+		cargo build --release
+	sudo chown $$USER:$$USER -R target
+	mv target/x86_64-unknown-linux-musl/release/operator .
+
 build:
 	@echo "Reusing built binary in current directory from make compile"
 	@ls -lah ./operator

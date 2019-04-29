@@ -15,8 +15,8 @@ path = "src/lib.rs"
 
 [dependencies]
 #kube = { git = "https://github.com/clux/kube-rs", rev = "162150b6d274ed97ff09c570f16f09fed6df9989" }
-#kube = { path = "../kubernetes-rust" }
-kube = "0.1.0"
+#kube = { path = "../kube-rs" }
+kube = "0.2.0"
 actix-web = "1.0.0-beta.2"
 actix = "0.8.1"
 serde = "1.0.90"
