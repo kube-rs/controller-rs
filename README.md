@@ -1,4 +1,10 @@
 ## operator-rs
+[![CircleCI](https://circleci.com/gh/clux/operator-rs/tree/master.svg?style=shield)](https://circleci.com/gh/clux/operator-rs/tree/master)
+[![docker pulls](https://img.shields.io/docker/pulls/clux/operator.svg)](
+https://hub.docker.com/r/clux/operator/)
+[![docker image info](https://images.microbadger.com/badges/image/clux/operator.svg)](http://microbadger.com/images/clux/operator)
+[![docker tag](https://images.microbadger.com/badges/version/clux/operator-rs.svg)](https://hub.docker.com/r/clux/operator-rs/tags/)
+
 A kubernetes operator for a `Foo` resource using reflectors in rust.
 
 ## Requirements
