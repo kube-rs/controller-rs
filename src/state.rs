@@ -1,18 +1,13 @@
-use serde::Deserialize;
-use failure::err_msg;
 use log::{info, warn, error, debug, trace};
-
 use kubernetes::{
     client::APIClient,
     config::Configuration,
     api::{Named, Cache, Reflector, ApiResource},
 };
-
 use std::{
     env,
     time::Duration,
 };
-
 use crate::*;
 
 /// Approximation of the CRD we want to work with
@@ -33,11 +28,14 @@ impl Named for FooResource {
 /// User state for Actix
 #[derive(Clone)]
 pub struct State {
-    // Add resources you need in here
+    // Add resources you need in here, expose it as you see fit
+    // this example encapsulates it behind a getter and internal poll thread below.
     foos: Reflector<FooResource>,
 }
 
-// Base machinery
+/// Example state machine that exposes the state of one `Reflector<FooResource>`
+///
+/// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl State {
     fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").expect("Need NAMESPACE evar");
@@ -50,38 +48,33 @@ impl State {
         Ok(State { foos })
     }
 
-    // Internal poll for internal thread
+    /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
-        self.foos.poll()?;
-        Ok(())
+        self.foos.poll()
     }
 
-    // Expose a full refresh button for the app
+    /// Exposed refresh button for use by app
     pub fn refresh(&self) -> Result<()> {
-        self.foos.refresh()?;
-        Ok(())
+        self.foos.refresh()
     }
 
-    // Expose a getter for the app
+    /// Exposed getter for read access to state for app
     pub fn foos(&self) -> Result<Cache<FooResource>> {
-        Ok(self.foos.read()?)
+        self.foos.read()
     }
 }
 
-/// Initialise all data and start polling for changes
+/// Lifecycle initialization interface for app
 ///
 /// This returns a `State` and calls `poll` on it continuously.
 /// As a result, this file encapsulates the only write access to a
 pub fn init(cfg: Configuration) -> Result<State> {
     let client = APIClient::new(cfg);
-    let state = State::new(client)?; // for webapp
-
-    let state2 = state.clone(); // for internal thread
-    // continuously poll for updates
-    use std::thread;
-    thread::spawn(move || {
+    let state = State::new(client)?; // for app to read
+    let state2 = state.clone(); // for internal thread to poll and update
+    std::thread::spawn(move || {
         loop {
-            thread::sleep(Duration::from_secs(10));
+            std::thread::sleep(Duration::from_secs(10));
             // poll all reflectors here
             // (this can cause a few more waits in edge cases)
             match state2.poll() {
@@ -94,6 +87,5 @@ pub fn init(cfg: Configuration) -> Result<State> {
             }
         }
     });
-
     Ok(state)
 }

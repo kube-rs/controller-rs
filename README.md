@@ -1,5 +1,5 @@
 ## operator-rs
-A kubernetes operator using reflectors in rust.
+A kubernetes operator for a `Foo` resource using reflectors in rust.
 
 ## Requirements
 A kube cluster with access to read crds:
@@ -9,26 +9,21 @@ export NAMESPACE=kube-system # or edit yaml
 kubectl apply -f yaml/access.yaml
 ```
 
-Custom resources installed in cluster:
+Some sample custom resources installed in cluster:
 
 ```sh
 kubectl apply -f yaml/examplecrd.yaml
 kubectl apply -f yaml/crd-qux.yaml
 ```
 
-Then you can run this by impersonating the `foobar` service account in `kube-system`.
-
+Then with a valid kube config with sufficient access (`foobar` service account has sufficient acces), you can start the server with `cargo run`.
 
 ## Usage
+Run with `cargo run` and inspect the state with `curl`:
 
 ```sh
-cargo run
-```
-
-You can inspect the state via `curl`:
-
-```sh
-curl localhost:8080/
+$ cargo run # keep this running
+$ curl localhost:8080/
 {"qux":{"name":"baz","info":"this is baz"}}
 ```
 
@@ -41,7 +36,7 @@ kubectl delete foo qux
 and watch that the reflector picks up on in:
 
 ```
-[2019-04-28T22:03:08Z INFO  operator::kube] Removing service qux
+[2019-04-28T22:03:08Z INFO  operator::kube] Removing qux from foos
 ```
 
 ditto if you try to apply one:
@@ -51,14 +46,13 @@ kubectl apply -f yaml/crd-baz.yaml
 ```
 
 ```
-[2019-04-28T22:07:01Z INFO  operator::kube] Adding service baz
+[2019-04-28T22:07:01Z INFO  operator::kube] Adding baz to foos
 ```
 
 If you edit, and then apply, baz, you'll get:
 
 ```
-[2019-04-28T22:08:21Z INFO  operator::kube] Modifying service baz
+[2019-04-28T22:08:21Z INFO  operator::kube] Modifying baz in foos
 ```
 
-In all cases, the reflector maintains an internal state for the `foos` custom resource.
-
+In all cases, the reflector maintains an internal state for the `Foo` custom resource, which you can verify with `curl`.
