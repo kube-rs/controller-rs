@@ -1,5 +1,5 @@
 use log::{info, warn, error, debug, trace};
-use kubernetes::{
+use kube::{
     client::APIClient,
     config::Configuration,
     api::{Named, Cache, Reflector, ApiResource},

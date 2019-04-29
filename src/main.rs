@@ -27,8 +27,8 @@ fn main() {
 
     // Set up kube access + fetch initial state. Crashing on failure here.
     let cfg = match env::var("HOME").expect("have HOME dir").as_ref() {
-        "/root" => kubernetes::config::incluster_config(),
-        _ => kubernetes::config::load_kube_config(),
+        "/root" => kube::config::incluster_config(),
+        _ => kube::config::load_kube_config(),
     }.expect("Failed to load kube config");
     let shared_state = state::init(cfg).unwrap();
 
