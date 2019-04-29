@@ -38,7 +38,7 @@ pub struct State {
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl State {
     fn new(client: APIClient) -> Result<Self> {
-        let namespace = env::var("NAMESPACE").expect("Need NAMESPACE evar");
+        let namespace = env::var("NAMESPACE").unwrap_or("kube-system".into());
         let fooresource = ApiResource {
             group: "clux.dev".into(),
             resource: "foos".into(),

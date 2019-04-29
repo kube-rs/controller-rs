@@ -2,7 +2,6 @@ apiVersion: clux.dev/v1
 kind: Foo
 metadata:
   name: qux
-  namespace: dev
 spec:
   name: qux
   info: this is qux

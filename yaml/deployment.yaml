@@ -1,0 +1,104 @@
+---
+# Scoped service account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: foo-operator
+  namespace: kube-system
+automountServiceAccountToken: true
+
+
+---
+# Access for the service account
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kube-system
+  name: foo-operator-role
+rules:
+  - apiGroups:
+    - clux.dev
+    resources:
+    - foos
+    verbs:
+    - get
+    - watch
+    - list
+
+---
+# Binding the role to the account in kube-system
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: foo-operator-binding
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: foo-operator
+roleRef:
+  kind: Role
+  name: foo-operator-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Expose the http port of the service
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo-operator
+  namespace: kube-system
+  labels:
+    app: foo-operator
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: foo-operator
+
+---
+# Main deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foo-operator
+  namespace: kube-system
+  labels:
+    app: foo-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foo-operator
+  template:
+    metadata:
+      labels:
+        app: foo-operator
+    spec:
+      serviceAccountName: foo-operator
+      containers:
+      - name: foo-operator
+        image: "clux/operator:0.1.0"
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: NAMESPACE
+          value: "kube-system"
