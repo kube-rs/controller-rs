@@ -2,7 +2,7 @@ use log::{info, warn, error, debug, trace};
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Named, Reflector, ResourceMap, ApiResource},
+    api::{Reflector, ResourceMap, ApiResource},
 };
 use std::{
     env,
@@ -17,12 +17,6 @@ use crate::*;
 pub struct FooResource {
   name: String,
   info: String,
-}
-impl Named for FooResource {
-    // we want Foo identified by self.name in the cache
-    fn name(&self) -> String {
-        self.name.clone()
-    }
 }
 
 /// User state for Actix
