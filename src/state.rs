@@ -13,7 +13,7 @@ use crate::*;
 /// Approximation of the CRD we want to work with
 /// Replace with own struct.
 /// Add serialize for returnability.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct FooResource {
   name: String,
   info: String,
