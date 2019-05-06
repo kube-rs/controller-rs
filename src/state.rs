@@ -19,12 +19,22 @@ pub struct FooResource {
   info: String,
 }
 
+/// Kubernetes Deployment simplified
+/// Just the parts we care about
+/// Use k8s-openapi for full structs
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct Deployment {
+    replicas: i32
+}
+
 /// User state for Actix
 #[derive(Clone)]
 pub struct State {
     // Add resources you need in here, expose it as you see fit
     // this example encapsulates it behind a getter and internal poll thread below.
     foos: Reflector<FooResource>,
+    /// You can also have reflectors for normal resources
+    deploys: Reflector<Deployment>,
 }
 
 /// Example state machine that exposes the state of one `Reflector<FooResource>`
@@ -36,22 +46,35 @@ impl State {
         let fooresource = ApiResource {
             group: "clux.dev".into(),
             resource: "foos".into(),
-            namespace: namespace,
+            namespace: Some(namespace.clone()),
         };
-        let foos = Reflector::new(client, fooresource)?;
-        Ok(State { foos })
+        let foos = Reflector::new(client.clone(), fooresource)?;
+        let deployresource = ApiResource {
+            group: "apps".into(),
+            resource: "deployments".into(),
+            namespace: Some(namespace.clone()),
+        };
+        let deploys = Reflector::new(client, deployresource)?;
+        Ok(State { foos, deploys })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
-        self.foos.poll()
+        self.foos.poll()?;
+        self.deploys.poll()?;
+        Ok(())
     }
     /// Exposed refresh button for use by app
     pub fn refresh(&self) -> Result<()> {
-        self.foos.refresh()
+        self.foos.refresh()?;
+        self.deploys.refresh()?;
+        Ok(())
     }
-    /// Exposed getter for read access to state for app
+    /// Exposed getters for read access to state for app
     pub fn foos(&self) -> Result<ResourceMap<FooResource>> {
         self.foos.read()
+    }
+    pub fn deploys(&self) -> Result<ResourceMap<Deployment>> {
+        self.deploys.read()
     }
 }
 

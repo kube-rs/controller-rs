@@ -14,8 +14,8 @@ name = "operator"
 path = "src/lib.rs"
 
 [dependencies]
-kube = { git = "https://github.com/clux/kube-rs", rev = "14a851d115ed8ea8ddeeb46398450d25862e3c11" }
-#kube = { path = "../kube-rs" }
+#kube = { git = "https://github.com/clux/kube-rs", rev = "14a851d115ed8ea8ddeeb46398450d25862e3c11" }
+kube = { path = "../kube-rs" }
 #kube = "0.2.0"
 actix-web = "1.0.0-beta.2"
 actix = "0.8.1"
