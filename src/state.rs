@@ -2,7 +2,7 @@ use log::{info, warn, error, debug, trace};
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Reflector, ResourceMap, ApiResource},
+    api::{ReflectorSpec, Reflector, ResourceMap, ResourceSpecMap, ApiResource},
 };
 use std::{
     env,
@@ -23,8 +23,13 @@ pub struct FooResource {
 /// Just the parts we care about
 /// Use k8s-openapi for full structs
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Deployment {
+pub struct DeploymentSpec {
     replicas: i32
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct DeploymentStatus {
+    availableReplicas: i32
 }
 
 /// User state for Actix
@@ -32,9 +37,9 @@ pub struct Deployment {
 pub struct State {
     // Add resources you need in here, expose it as you see fit
     // this example encapsulates it behind a getter and internal poll thread below.
-    foos: Reflector<FooResource>,
+    foos: ReflectorSpec<FooResource>,
     /// You can also have reflectors for normal resources
-    deploys: Reflector<Deployment>,
+    deploys: Reflector<DeploymentSpec, DeploymentStatus>,
 }
 
 /// Example state machine that exposes the state of one `Reflector<FooResource>`
@@ -72,10 +77,10 @@ impl State {
         Ok(())
     }
     /// Exposed getters for read access to state for app
-    pub fn foos(&self) -> Result<ResourceMap<FooResource>> {
+    pub fn foos(&self) -> Result<ResourceSpecMap<FooResource>> {
         self.foos.read()
     }
-    pub fn deploys(&self) -> Result<ResourceMap<Deployment>> {
+    pub fn deploys(&self) -> Result<ResourceMap<DeploymentSpec, DeploymentStatus>> {
         self.deploys.read()
     }
 }
