@@ -46,12 +46,14 @@ impl State {
         let fooresource = ApiResource {
             group: "clux.dev".into(),
             resource: "foos".into(),
+            version: "v1".into(),
             namespace: Some(namespace.clone()),
         };
         let foos = Reflector::new(client.clone(), fooresource)?;
         let deployresource = ApiResource {
             group: "apps".into(),
             resource: "deployments".into(),
+            version: "v1".into(),
             namespace: Some(namespace.clone()),
         };
         let deploys = Reflector::new(client, deployresource)?;
