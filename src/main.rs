@@ -16,6 +16,10 @@ fn deploys(state: Data<State>, req: HttpRequest) -> HttpResponse {
     let deploys = state.deploys().unwrap();
     HttpResponse::Ok().json(deploys)
 }
+fn deploysfull(state: Data<State>, req: HttpRequest) -> HttpResponse {
+    let deploys = state.deploysfull().unwrap();
+    HttpResponse::Ok().json(deploys)
+}
 
 fn health(_: HttpRequest) -> HttpResponse {
     HttpResponse::Ok().json("healthy")
@@ -47,6 +51,7 @@ fn main() {
             .service(web::resource("/health").to(health))
             .service(web::resource("/").to(index))
             .service(web::resource("/deploys").to(deploys))
+            .service(web::resource("/deploysfull").to(deploysfull))
         })
         .bind("0.0.0.0:8080").expect("Can not bind to 0.0.0.0:8080")
         .shutdown_timeout(0) // example server

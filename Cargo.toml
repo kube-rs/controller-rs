@@ -24,3 +24,4 @@ serde_derive = "1.0.90"
 failure = "0.1.5"
 log = "0.4.6"
 env_logger = "0.6.1"
+k8s-openapi = { version = "0.4.0", features = ["v1_13"] }

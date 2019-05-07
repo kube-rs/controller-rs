@@ -26,11 +26,14 @@ pub struct FooResource {
 pub struct DeploymentSpec {
     replicas: i32
 }
-
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DeploymentStatus {
     availableReplicas: i32
 }
+
+// You can also use the full structs in a reflector
+use k8s_openapi::api::apps::v1::DeploymentStatus as FullStatus;
+use k8s_openapi::api::apps::v1::Deployment as FullDeploy;
 
 /// User state for Actix
 #[derive(Clone)]
@@ -40,6 +43,8 @@ pub struct State {
     foos: ReflectorSpec<FooResource>,
     /// You can also have reflectors for normal resources
     deploys: Reflector<DeploymentSpec, DeploymentStatus>,
+    /// Full deploy data using openapi spec
+    deploysfull: Reflector<FullDeploy, FullStatus>,
 }
 
 /// Example state machine that exposes the state of one `Reflector<FooResource>`
@@ -61,19 +66,28 @@ impl State {
             version: "v1".into(),
             namespace: Some(namespace.clone()),
         };
-        let deploys = Reflector::new(client, deployresource)?;
-        Ok(State { foos, deploys })
+        let deploys = Reflector::new(client.clone(), deployresource)?;
+        let deployresourcefull = ApiResource {
+            group: "apps".into(),
+            resource: "deployments".into(),
+            version: "v1".into(),
+            namespace: Some(namespace.clone()),
+        };
+        let deploysfull = Reflector::new(client, deployresourcefull)?;
+        Ok(State { foos, deploys, deploysfull })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
         self.foos.poll()?;
         self.deploys.poll()?;
+        self.deploysfull.poll()?;
         Ok(())
     }
     /// Exposed refresh button for use by app
     pub fn refresh(&self) -> Result<()> {
         self.foos.refresh()?;
         self.deploys.refresh()?;
+        self.deploysfull.refresh()?;
         Ok(())
     }
     /// Exposed getters for read access to state for app
@@ -82,6 +96,9 @@ impl State {
     }
     pub fn deploys(&self) -> Result<ResourceMap<DeploymentSpec, DeploymentStatus>> {
         self.deploys.read()
+    }
+    pub fn deploysfull(&self) -> Result<ResourceMap<FullDeploy, FullStatus>> {
+        self.deploysfull.read()
     }
 }
 
