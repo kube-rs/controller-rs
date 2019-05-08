@@ -2,7 +2,7 @@ use log::{info, warn, error, debug, trace};
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Reflector, ResourceMap, ApiResource},
+    api::{ReflectorSpec, ResourceSpecMap, ApiResource},
 };
 use std::{
     env,
@@ -24,7 +24,7 @@ pub struct FooResource {
 pub struct State {
     // Add resources you need in here, expose it as you see fit
     // this example encapsulates it behind a getter and internal poll thread below.
-    foos: Reflector<FooResource>,
+    foos: ReflectorSpec<FooResource>,
 }
 
 /// Example state machine that exposes the state of one `Reflector<FooResource>`
@@ -36,21 +36,25 @@ impl State {
         let fooresource = ApiResource {
             group: "clux.dev".into(),
             resource: "foos".into(),
-            namespace: namespace,
+            version: "v1".into(),
+            namespace: Some(namespace.clone()),
+            ..Default::default()
         };
-        let foos = Reflector::new(client, fooresource)?;
+        let foos = ReflectorSpec::new(client.clone(), fooresource)?;
         Ok(State { foos })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
-        self.foos.poll()
+        self.foos.poll()?;
+        Ok(())
     }
     /// Exposed refresh button for use by app
     pub fn refresh(&self) -> Result<()> {
-        self.foos.refresh()
+        self.foos.refresh()?;
+        Ok(())
     }
-    /// Exposed getter for read access to state for app
-    pub fn foos(&self) -> Result<ResourceMap<FooResource>> {
+    /// Exposed getters for read access to state for app
+    pub fn foos(&self) -> Result<ResourceSpecMap<FooResource>> {
         self.foos.read()
     }
 }
