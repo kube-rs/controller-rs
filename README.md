@@ -1,11 +1,11 @@
-## operator-rs
-[![CircleCI](https://circleci.com/gh/clux/operator-rs/tree/master.svg?style=shield)](https://circleci.com/gh/clux/operator-rs/tree/master)
-[![docker pulls](https://img.shields.io/docker/pulls/clux/operator.svg)](
-https://hub.docker.com/r/clux/operator/)
-[![docker image info](https://images.microbadger.com/badges/image/clux/operator.svg)](http://microbadger.com/images/clux/operator)
-[![docker tag](https://images.microbadger.com/badges/version/clux/operator.svg)](https://hub.docker.com/r/clux/operator/tags/)
+## controller-rs
+[![CircleCI](https://circleci.com/gh/clux/controller-rs/tree/master.svg?style=shield)](https://circleci.com/gh/clux/controller-rs/tree/master)
+[![docker pulls](https://img.shields.io/docker/pulls/clux/controller.svg)](
+https://hub.docker.com/r/clux/controller/)
+[![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
+[![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A kubernetes operator for a `Foo` resource using reflectors in rust.
+A kubernetes controller for a `Foo` resource using reflectors in rust.
 
 ## Requirements
 A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
@@ -35,7 +35,7 @@ Deploy as a deployment with scoped access via a service account. See `yaml/deplo
 ```sh
 $ kubectl apply -f yaml/deployment.yaml
 $ sleep 10 # wait for docker pull and start on kube side
-$ export FOO_POD="$(kubectl get pods -n kube-system -lapp=foo-operator --no-headers | awk '{print $1}')"
+$ export FOO_POD="$(kubectl get pods -n kube-system -lapp=foo-controller --no-headers | awk '{print $1}')"
 kubectl port-forward ${FOO_POD} 8080:8080 # keep this running
 $ curl localhost:8080/
 {"qux":{"name":"baz","info":"this is baz"}}
@@ -51,7 +51,7 @@ kubectl delete foo qux
 and watch that the reflector picks up on in:
 
 ```
-[2019-04-28T22:03:08Z INFO  operator::kube] Removing qux from foos
+[2019-04-28T22:03:08Z INFO  controller::kube] Removing qux from foos
 ```
 
 ditto if you try to apply one:
@@ -61,13 +61,13 @@ kubectl apply -f yaml/crd-baz.yaml
 ```
 
 ```
-[2019-04-28T22:07:01Z INFO  operator::kube] Adding baz to foos
+[2019-04-28T22:07:01Z INFO  controller::kube] Adding baz to foos
 ```
 
 If you edit, and then apply, baz, you'll get:
 
 ```
-[2019-04-28T22:08:21Z INFO  operator::kube] Modifying baz in foos
+[2019-04-28T22:08:21Z INFO  controller::kube] Modifying baz in foos
 ```
 
 In all cases, the reflector maintains an internal state for the `Foo` custom resource, which you can verify with `curl`.

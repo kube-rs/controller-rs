@@ -1,5 +1,5 @@
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-COPY ./operator /bin/
+COPY ./controller /bin/
 EXPOSE 8080
-ENTRYPOINT ["/bin/operator"]
+ENTRYPOINT ["/bin/controller"]

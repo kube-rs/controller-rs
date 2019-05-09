@@ -1,4 +1,4 @@
-NAME=operator
+NAME=controller
 VERSION=$(shell git rev-parse HEAD)
 SEMVER_VERSION=$(shell grep version Cargo.toml | awk -F"\"" '{print $$2}' | head -n 1)
 REPO=clux
@@ -15,11 +15,11 @@ compile:
 		-it clux/muslrust:stable \
 		cargo build --release
 	sudo chown $$USER:$$USER -R target
-	mv target/x86_64-unknown-linux-musl/release/operator .
+	mv target/x86_64-unknown-linux-musl/release/controller .
 
 build:
 	@echo "Reusing built binary in current directory from make compile"
-	@ls -lah ./operator
+	@ls -lah ./controller
 	docker build -t $(REPO)/$(NAME):$(VERSION) .
 
 tag-latest: build

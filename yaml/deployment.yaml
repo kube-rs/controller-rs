@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: foo-operator
+  name: foo-controller
   namespace: kube-system
 automountServiceAccountToken: true
 
@@ -14,7 +14,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   namespace: kube-system
-  name: foo-operator-role
+  name: foo-controller-role
 rules:
   - apiGroups:
     - clux.dev
@@ -30,14 +30,14 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: foo-operator-binding
+  name: foo-controller-binding
   namespace: kube-system
 subjects:
 - kind: ServiceAccount
-  name: foo-operator
+  name: foo-controller
 roleRef:
   kind: Role
-  name: foo-operator-role
+  name: foo-controller-role
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -45,10 +45,10 @@ roleRef:
 apiVersion: v1
 kind: Service
 metadata:
-  name: foo-operator
+  name: foo-controller
   namespace: kube-system
   labels:
-    app: foo-operator
+    app: foo-controller
 spec:
   ports:
   - port: 80
@@ -56,31 +56,31 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: foo-operator
+    app: foo-controller
 
 ---
 # Main deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: foo-operator
+  name: foo-controller
   namespace: kube-system
   labels:
-    app: foo-operator
+    app: foo-controller
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: foo-operator
+      app: foo-controller
   template:
     metadata:
       labels:
-        app: foo-operator
+        app: foo-controller
     spec:
-      serviceAccountName: foo-operator
+      serviceAccountName: foo-controller
       containers:
-      - name: foo-operator
-        image: "clux/operator:0.1.0"
+      - name: foo-controller
+        image: "clux/controller:0.1.2"
         imagePullPolicy: IfNotPresent
         resources:
           limits:

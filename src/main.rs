@@ -1,7 +1,7 @@
 #![allow(unused_imports, unused_variables)]
 use std::env;
 use log::{info, warn, error, debug, trace};
-pub use operator::*;
+pub use controller::*;
 
 use actix_web::{
   web::{self, Data},
@@ -20,8 +20,8 @@ fn health(_: HttpRequest) -> HttpResponse {
 fn main() {
     // Logging
     if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "actix_web=info,operator=info,kube=info");
-        //env::set_var("RUST_LOG", "actix_web=info,operator=debug,kube=debug");
+        env::set_var("RUST_LOG", "actix_web=info,controller=info,kube=info");
+        //env::set_var("RUST_LOG", "actix_web=info,controller=debug,kube=debug");
     }
     env_logger::init();
 
@@ -33,7 +33,7 @@ fn main() {
     let shared_state = state::init(cfg).expect("Failed to initialize reflectors");
 
     // Web server
-    let sys = actix::System::new("operator");
+    let sys = actix::System::new("controller");
     HttpServer::new(move || {
         App::new()
             .data(shared_state.clone())

@@ -1,22 +1,22 @@
 [package]
-name = "operator"
-version = "0.1.1"
+name = "controller"
+version = "0.1.3"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 
 [[bin]]
 doc = false
-name = "operator"
+name = "controller"
 path = "src/main.rs"
 
 [lib]
-name = "operator"
+name = "controller"
 path = "src/lib.rs"
 
 [dependencies]
 #kube = { git = "https://github.com/clux/kube-rs", rev = "14a851d115ed8ea8ddeeb46398450d25862e3c11" }
 #kube = { path = "../kube-rs" }
-kube = "0.3.0"
+kube = "0.4.0"
 actix-web = "1.0.0-beta.2"
 actix = "0.8.1"
 serde = "1.0.90"

@@ -47,7 +47,7 @@ jobs:
       - persist_to_workspace:
           root: target/x86_64-unknown-linux-musl/release/
           paths:
-            - operator
+            - controller
 
   unit_test:
     docker:
