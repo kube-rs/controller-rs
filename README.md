@@ -23,22 +23,22 @@ You need a valid local kube config with sufficient access (`foobar` service acco
 Start the server with `cargo run`, then inspect the state with `curl`:
 
 ```sh
-$ export NAMESPACE=kube-system # specify if you applied it elsewhere
-$ cargo run # keep this running
-$ curl localhost:8080/
-{"qux":{"name":"baz","info":"this is baz"}}
+export NAMESPACE=kube-system # specify if you applied it elsewhere
+cargo run # keep this running
+curl localhost:8080/
+# {"qux":{"name":"baz","info":"this is baz"}}
 ```
 
 ### In-cluster Config
 Deploy as a deployment with scoped access via a service account. See `yaml/deployment.yaml` as an example.
 
 ```sh
-$ kubectl apply -f yaml/deployment.yaml
-$ sleep 10 # wait for docker pull and start on kube side
-$ export FOO_POD="$(kubectl get pods -n kube-system -lapp=foo-controller --no-headers | awk '{print $1}')"
-kubectl port-forward ${FOO_POD} 8080:8080 # keep this running
-$ curl localhost:8080/
-{"qux":{"name":"baz","info":"this is baz"}}
+kubectl apply -f yaml/deployment.yaml
+sleep 10 # wait for docker pull and start on kube side
+export FOO_POD="$(kubectl get pods -n kube-system -lapp=foo-controller --no-headers | awk '{print $1}')"
+kubectl port-forward ${FOO_POD} -n kube-system 8080:8080 # keep this running
+curl localhost:8080/
+# {"qux":{"name":"baz","info":"this is baz"}}
 ```
 
 ## Usage
