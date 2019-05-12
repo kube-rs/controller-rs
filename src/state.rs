@@ -1,12 +1,12 @@
-use log::{info, warn, error, debug, trace};
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{ReflectorSpec, ResourceSpecMap, ApiResource},
+    api::{Informer, WatchEvent, ApiResource, Void},
 };
 use std::{
     env,
-    time::Duration,
+    collections::BTreeMap,
+    sync::{Arc, RwLock},
 };
 use crate::*;
 
@@ -19,15 +19,19 @@ pub struct FooResource {
   info: String,
 }
 
+/// Alias for inner state
+pub type Cache = BTreeMap<String, FooResource>;
+
 /// User state for Actix
 #[derive(Clone)]
 pub struct State {
-    // Add resources you need in here, expose it as you see fit
-    // this example encapsulates it behind a getter and internal poll thread below.
-    foos: ReflectorSpec<FooResource>,
+    /// An informer for FooResource (with a blank Status struct)
+    info: Informer<FooResource, Void>,
+    /// Internal state built up by reconciliation loop
+    cache: Arc<RwLock<Cache>>,
 }
 
-/// Example state machine that exposes the state of one `Reflector<FooResource>`
+/// Example State machine that watches
 ///
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl State {
@@ -40,22 +44,53 @@ impl State {
             namespace: Some(namespace.clone()),
             ..Default::default()
         };
-        let foos = ReflectorSpec::new(client.clone(), fooresource)?;
-        Ok(State { foos })
+        let info = Informer::new(client.clone(), fooresource)?;
+        let cache = Arc::new(RwLock::new(BTreeMap::new()));
+        Ok(State { info, cache })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
-        self.foos.poll()?;
+        self.info.poll()?;
+        // in this example we always just handle all the events as they happen:
+        while let Some(event) = self.info.pop() {
+            self.handle_foo_event(event)?;
+        }
         Ok(())
     }
-    /// Exposed refresh button for use by app
-    pub fn refresh(&self) -> Result<()> {
-        self.foos.refresh()?;
+
+    fn handle_foo_event(&self, ev: WatchEvent<FooResource, Void>) -> Result<()> {
+        // This example only builds up an internal map from the events
+        // But you can use self.client here to make kube api calls
+        match ev {
+            WatchEvent::Added(o) => {
+                let name = o.metadata.name.clone();
+                info!("Added Foo: {} ({})", name, o.spec.info);
+                self.cache.write().unwrap()
+                    .entry(name).or_insert_with(|| o.spec);
+            },
+            WatchEvent::Modified(o) => {
+                let name = o.metadata.name.clone();
+                info!("Modified Foo: {} ({})", name, o.spec.info);
+                self.cache.write().unwrap()
+                    .entry(name).and_modify(|e| *e = o.spec);
+            },
+            WatchEvent::Deleted(o) => {
+                info!("Deleted Foo: {}", o.metadata.name);
+                self.cache.write().unwrap()
+                    .remove(&o.metadata.name);
+            },
+            WatchEvent::Error(e) => {
+                warn!("Error event: {:?}", e); // ought to refresh here
+            }
+        }
         Ok(())
     }
     /// Exposed getters for read access to state for app
-    pub fn foos(&self) -> Result<ResourceSpecMap<FooResource>> {
-        self.foos.read()
+    pub fn foos(&self) -> Result<Cache> {
+        // unwrap for users because Poison errors are not great to deal with atm
+        // rather just have the handler 500 above in this case
+        let res = self.cache.read().unwrap().clone();
+        Ok(res)
     }
 }
 
@@ -68,16 +103,11 @@ pub fn init(cfg: Configuration) -> Result<State> {
     let state_clone = state.clone(); // clone for internal thread
     std::thread::spawn(move || {
         loop {
-            std::thread::sleep(Duration::from_secs(10));
-            // update state here - can cause a few more waits in edge cases
-            match state_clone.poll() {
-                Ok(_) => trace!("State refreshed"), // normal case
-                Err(e) => {
-                    // Can't recover: boot as much as kubernetes' backoff allows
-                    error!("Failed to refesh cache '{}' - rebooting", e);
-                    std::process::exit(1); // boot might fix it if network is failing
-                }
-            }
+            state_clone.poll().map_err(|e| {
+                error!("Kube state failed to recover: {}", e);
+                // rely on kube's crash loop backoff to retry sensibly:
+                std::process::exit(1);
+            }).unwrap();
         }
     });
     Ok(state)

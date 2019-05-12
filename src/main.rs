@@ -5,10 +5,10 @@ pub use controller::*;
 
 use actix_web::{
   web::{self, Data},
-  App, HttpServer, HttpRequest, HttpResponse, Responder, middleware,
+  App, HttpServer, HttpRequest, HttpResponse, middleware,
 };
 
-fn index(state: Data<State>, req: HttpRequest) -> HttpResponse {
+fn index(state: Data<State>, _req: HttpRequest) -> HttpResponse {
     let foos = state.foos().unwrap();
     HttpResponse::Ok().json(foos)
 }

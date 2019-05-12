@@ -51,7 +51,7 @@ kubectl delete foo qux
 and watch that the reflector picks up on in:
 
 ```
-[2019-04-28T22:03:08Z INFO  controller::kube] Removing qux from foos
+[2019-04-28T22:03:08Z INFO  controller::state] Deleted Foo: qux
 ```
 
 ditto if you try to apply one:
@@ -61,13 +61,16 @@ kubectl apply -f yaml/crd-baz.yaml
 ```
 
 ```
-[2019-04-28T22:07:01Z INFO  controller::kube] Adding baz to foos
+[2019-04-28T22:07:01Z INFO  controller::state] Adding Foo: baz (this is baz)
 ```
 
 If you edit, and then apply, baz, you'll get:
 
 ```
-[2019-04-28T22:08:21Z INFO  controller::kube] Modifying baz in foos
+[2019-04-28T22:08:21Z INFO  controller::state] Modifyied Foo: baz (edit str)
 ```
 
 In all cases, the reflector maintains an internal state for the `Foo` custom resource, which you can verify with `curl`.
+
+## Events
+There is no behaviour attached to the event handler at the moment, but the events themselves are exposed in [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs)
