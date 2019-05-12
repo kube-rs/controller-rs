@@ -5,7 +5,7 @@ https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
 [![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A kubernetes controller for a `Foo` resource using reflectors in rust.
+A kubernetes controller for a `Foo` resource using informers in rust.
 
 ## Requirements
 A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
@@ -48,7 +48,7 @@ Then you can try to remove a `foo`:
 kubectl delete foo qux
 ```
 
-and watch that the reflector picks up on in:
+and verify that the app handles the event:
 
 ```
 [2019-04-28T22:03:08Z INFO  controller::state] Deleted Foo: qux
@@ -70,7 +70,7 @@ If you edit, and then apply, baz, you'll get:
 [2019-04-28T22:08:21Z INFO  controller::state] Modifyied Foo: baz (edit str)
 ```
 
-In all cases, the reflector maintains an internal state for the `Foo` custom resource, which you can verify with `curl`.
+In all cases, the app maintains a simple state map for the `Foo` custom resource, which you can verify with `curl`.
 
 ## Events
 There is no behaviour attached to the event handler at the moment, but the events themselves are exposed in [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs)

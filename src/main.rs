@@ -30,7 +30,7 @@ fn main() {
         "/root" => kube::config::incluster_config(),
         _ => kube::config::load_kube_config(),
     }.expect("Failed to load kube config");
-    let shared_state = state::init(cfg).expect("Failed to initialize reflectors");
+    let shared_state = state::init(cfg).expect("Failed to initialize state");
 
     // Web server
     let sys = actix::System::new("controller");
