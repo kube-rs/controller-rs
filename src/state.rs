@@ -29,6 +29,8 @@ pub struct State {
     info: Informer<FooResource, Void>,
     /// Internal state built up by reconciliation loop
     cache: Arc<RwLock<Cache>>,
+    /// A kube client for performing cluster actions based on Foo events
+    client: APIClient,
 }
 
 /// Example State machine that watches
@@ -46,21 +48,21 @@ impl State {
         };
         let info = Informer::new(client.clone(), fooresource)?;
         let cache = Arc::new(RwLock::new(BTreeMap::new()));
-        Ok(State { info, cache })
+        Ok(State { info, cache, client })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
         self.info.poll()?;
         // in this example we always just handle all the events as they happen:
         while let Some(event) = self.info.pop() {
-            self.handle_foo_event(event)?;
+            self.handle_event(event)?;
         }
         Ok(())
     }
 
-    fn handle_foo_event(&self, ev: WatchEvent<FooResource, Void>) -> Result<()> {
+    fn handle_event(&self, ev: WatchEvent<FooResource, Void>) -> Result<()> {
         // This example only builds up an internal map from the events
-        // But you can use self.client here to make kube api calls
+        // You can use self.client here to make the necessary kube api calls
         match ev {
             WatchEvent::Added(o) => {
                 let name = o.metadata.name.clone();

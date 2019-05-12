@@ -73,4 +73,4 @@ If you edit, and then apply, baz, you'll get:
 In all cases, the app maintains a simple state map for the `Foo` custom resource, which you can verify with `curl`.
 
 ## Events
-There is no behaviour attached to the event handler at the moment, but the events themselves are exposed in [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs)
+The current `handle_foo_event` fn only prints and builds up internal state at the moment, but you can perform arbitrary kube actions using the client. See [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs)
