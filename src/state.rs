@@ -82,7 +82,7 @@ impl State {
                     .remove(&o.metadata.name);
             },
             WatchEvent::Error(e) => {
-                warn!("Error event: {:?}", e); // ought to refresh here
+                warn!("Error event: {:?}", e); // we could refresh here
             }
         }
         Ok(())
@@ -99,7 +99,6 @@ impl State {
 /// Lifecycle initialization interface for app
 ///
 /// This returns a `State` and calls `poll` on it continuously.
-/// As a result, this file encapsulates the only write access to a
 pub fn init(cfg: Configuration) -> Result<State> {
     let state = State::new(APIClient::new(cfg))?; // for app to read
     let state_clone = state.clone(); // clone for internal thread
