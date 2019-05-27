@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 
@@ -14,11 +14,11 @@ name = "controller"
 path = "src/lib.rs"
 
 [dependencies]
-kube = { git = "https://github.com/clux/kube-rs", rev = "517791cc0d97485ae5519043ed51f81c0dabe92e" }
+#kube = { git = "https://github.com/clux/kube-rs", rev = "3bff3dda83f0800cd5f8fc59a213836aab9de3a8" }
 #kube = { path = "../kube-rs" }
-#kube = "0.7.0"
-actix-web = "1.0.0-beta.2"
-actix = "0.8.1"
+kube = "0.7.0"
+actix-web = "1.0.0-beta.5"
+actix = "0.8.2"
 serde = "1.0.90"
 serde_derive = "1.0.90"
 failure = "0.1.5"
