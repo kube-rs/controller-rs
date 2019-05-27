@@ -1,7 +1,7 @@
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Informer, WatchEvent, ApiResource, Void},
+    api::{Informer, WatchEvent, Api, Void},
 };
 use std::{
     env,
@@ -39,14 +39,13 @@ pub struct State {
 impl State {
     fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").unwrap_or("kube-system".into());
-        let fooresource = ApiResource {
-            group: "clux.dev".into(),
-            resource: "foos".into(),
-            version: "v1".into(),
-            namespace: Some(namespace.clone()),
-            ..Default::default()
-        };
-        let info = Informer::new(client.clone(), fooresource)?;
+        let fooresource = Api::customResource("foos")
+            .version("v1")
+            .group("clux.dev")
+            .within(&namespace);
+        let info = Informer::new(client.clone(), fooresource)
+            .timeout(30)
+            .init()?;
         let cache = Arc::new(RwLock::new(BTreeMap::new()));
         Ok(State { info, cache, client })
     }
