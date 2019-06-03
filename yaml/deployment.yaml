@@ -80,7 +80,7 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:0.2.1"
+        image: "clux/controller:0.2.2"
         imagePullPolicy: IfNotPresent
         resources:
           limits:
