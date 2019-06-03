@@ -23,7 +23,7 @@ You need a valid local kube config with sufficient access (`foobar` service acco
 Start the server with `cargo run`, then inspect the state with `curl`:
 
 ```sh
-export NAMESPACE=kube-system # specify if you applied it elsewhere
+export NAMESPACE=default # specify if you applied it elsewhere
 cargo run # keep this running
 curl localhost:8080/
 # {"qux":{"name":"baz","info":"this is baz"}}
@@ -35,8 +35,8 @@ Deploy as a deployment with scoped access via a service account. See `yaml/deplo
 ```sh
 kubectl apply -f yaml/deployment.yaml
 sleep 10 # wait for docker pull and start on kube side
-export FOO_POD="$(kubectl get pods -n kube-system -lapp=foo-controller --no-headers | awk '{print $1}')"
-kubectl port-forward ${FOO_POD} -n kube-system 8080:8080 # keep this running
+export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers | awk '{print $1}')"
+kubectl port-forward ${FOO_POD} -n default 8080:8080 # keep this running
 curl localhost:8080/
 # {"qux":{"name":"baz","info":"this is baz"}}
 ```
@@ -45,7 +45,7 @@ curl localhost:8080/
 Then you can try to remove a `foo`:
 
 ```sh
-kubectl delete foo qux
+kubectl delete foo qux -n default
 ```
 
 and verify that the app handles the event:
@@ -57,7 +57,7 @@ and verify that the app handles the event:
 ditto if you try to apply one:
 
 ```sh
-kubectl apply -f yaml/crd-baz.yaml
+kubectl apply -f yaml/crd-baz.yaml -n default
 ```
 
 ```

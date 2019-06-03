@@ -1,7 +1,7 @@
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Informer, WatchEvent, Api, Void},
+    api::{Informer, WatchEvent, Object, RawApi, Void},
 };
 use std::{
     env,
@@ -14,19 +14,21 @@ use crate::*;
 /// Replace with own struct.
 /// Add serialize for returnability.
 #[derive(Deserialize, Serialize, Clone)]
-pub struct FooResource {
+pub struct FooSpec {
   name: String,
   info: String,
 }
+/// Type alias for the kubernetes object
+type Foo = Object<FooSpec, Void>;
 
-/// Alias for inner state
-pub type Cache = BTreeMap<String, FooResource>;
+/// Alias for inner state (here we only care about the Spec)
+pub type Cache = BTreeMap<String, FooSpec>;
 
 /// User state for Actix
 #[derive(Clone)]
 pub struct State {
-    /// An informer for FooResource (with a blank Status struct)
-    info: Informer<FooResource, Void>,
+    /// An informer for Foo
+    info: Informer<Foo>,
     /// Internal state built up by reconciliation loop
     cache: Arc<RwLock<Cache>>,
     /// A kube client for performing cluster actions based on Foo events
@@ -38,13 +40,13 @@ pub struct State {
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl State {
     fn new(client: APIClient) -> Result<Self> {
-        let namespace = env::var("NAMESPACE").unwrap_or("kube-system".into());
-        let fooresource = Api::customResource("foos")
+        let namespace = env::var("NAMESPACE").unwrap_or("default".into());
+        let fooresource = RawApi::customResource("foos")
             .version("v1")
             .group("clux.dev")
             .within(&namespace);
-        let info = Informer::new(client.clone(), fooresource)
-            .timeout(30)
+        let info = Informer::raw(client.clone(), fooresource)
+            .timeout(15)
             .init()?;
         let cache = Arc::new(RwLock::new(BTreeMap::new()));
         Ok(State { info, cache, client })
@@ -59,7 +61,7 @@ impl State {
         Ok(())
     }
 
-    fn handle_event(&self, ev: WatchEvent<FooResource, Void>) -> Result<()> {
+    fn handle_event(&self, ev: WatchEvent<Foo>) -> Result<()> {
         // This example only builds up an internal map from the events
         // You can use self.client here to make the necessary kube api calls
         match ev {

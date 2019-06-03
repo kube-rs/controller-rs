@@ -20,8 +20,7 @@ fn health(_: HttpRequest) -> HttpResponse {
 fn main() {
     // Logging
     if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "actix_web=info,controller=info,kube=info");
-        //env::set_var("RUST_LOG", "actix_web=info,controller=debug,kube=debug");
+        env::set_var("RUST_LOG", "actix_web=info,controller=info,kube=debug");
     }
     env_logger::init();
 

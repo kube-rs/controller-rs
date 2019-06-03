@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: foo-controller
-  namespace: kube-system
+  namespace: default
 automountServiceAccountToken: true
 
 
@@ -13,7 +13,7 @@ automountServiceAccountToken: true
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: kube-system
+  namespace: default
   name: foo-controller-role
 rules:
   - apiGroups:
@@ -26,12 +26,12 @@ rules:
     - list
 
 ---
-# Binding the role to the account in kube-system
+# Binding the role to the account in default
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: foo-controller-binding
-  namespace: kube-system
+  namespace: default
 subjects:
 - kind: ServiceAccount
   name: foo-controller
@@ -46,7 +46,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: foo-controller
-  namespace: kube-system
+  namespace: default
   labels:
     app: foo-controller
 spec:
@@ -64,7 +64,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: foo-controller
-  namespace: kube-system
+  namespace: default
   labels:
     app: foo-controller
 spec:
@@ -101,4 +101,4 @@ spec:
           periodSeconds: 5
         env:
         - name: NAMESPACE
-          value: "kube-system"
+          value: "default"
