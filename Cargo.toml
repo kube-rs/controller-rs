@@ -16,11 +16,11 @@ path = "src/lib.rs"
 [dependencies]
 #kube = { git = "https://github.com/clux/kube-rs", rev = "3bff3dda83f0800cd5f8fc59a213836aab9de3a8" }
 #kube = { path = "../kube-rs" }
-kube = { version = "0.10.0", features = [] }
-actix-web = "1.0.0-beta.5"
-actix = "0.8.2"
-serde = "1.0.90"
-serde_derive = "1.0.90"
+kube = { version = "0.11.0", features = [] }
+actix-web = "1.0.3"
+actix = "0.8.3"
+serde = "1.0.94"
+serde_derive = "1.0.94"
 failure = "0.1.5"
 log = "0.4.6"
 env_logger = "0.6.1"
