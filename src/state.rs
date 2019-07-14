@@ -1,7 +1,7 @@
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Informer, WatchEvent, Object, RawApi, Void},
+    api::{Informer, WatchEvent, Object, ListParams, Api, Void, KubeObject},
 };
 use std::{
     env,
@@ -41,14 +41,22 @@ pub struct State {
 impl State {
     fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").unwrap_or("default".into());
-        let fooresource = RawApi::customResource("foos")
+        let foos : Api<Foo> = Api::customResource(client.clone(), "foos")
             .version("v1")
             .group("clux.dev")
             .within(&namespace);
-        let info = Informer::raw(client.clone(), fooresource)
+
+        let mut data = BTreeMap::new();
+        let init_state = foos.list(&ListParams::default())?;
+        for f in init_state.items {
+            data.insert(f.meta().name.clone(), f.spec);
+        }
+        let cache = Arc::new(RwLock::new(data));
+
+        let info = Informer::new(foos)
             .timeout(15)
-            .init()?;
-        let cache = Arc::new(RwLock::new(BTreeMap::new()));
+            .init_from(init_state.metadata.resourceVersion.unwrap());
+
         Ok(State { info, cache, client })
     }
     /// Internal poll for internal thread
