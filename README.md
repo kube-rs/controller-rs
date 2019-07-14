@@ -20,13 +20,11 @@ kubectl apply -f yaml/crd-qux.yaml
 ### Local Config
 You need a valid local kube config with sufficient access (`foobar` service account has sufficient access if you want to [impersonate](https://clux.github.io/probes/post/2019-03-31-impersonating-kube-accounts/) the one in `yaml/access.yaml`).
 
-Start the server with `cargo run`, then inspect the state with `curl`:
+Start the server with `cargo run`:
 
 ```sh
 export NAMESPACE=default # specify if you applied it elsewhere
 cargo run # keep this running
-curl localhost:8080/
-# {"qux":{"name":"baz","info":"this is baz"}}
 ```
 
 ### In-cluster Config
@@ -37,18 +35,18 @@ kubectl apply -f yaml/deployment.yaml
 sleep 10 # wait for docker pull and start on kube side
 export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers | awk '{print $1}')"
 kubectl port-forward ${FOO_POD} -n default 8080:8080 # keep this running
-curl localhost:8080/
-# {"qux":{"name":"baz","info":"this is baz"}}
 ```
 
 ## Usage
-Then you can try to remove a `foo`:
+Once the app is running, you can see that it observes `foo` events.
+
+You can try to remove a `foo`:
 
 ```sh
 kubectl delete foo qux -n default
 ```
 
-and verify that the app handles the event:
+then the app will soon print:
 
 ```
 [2019-04-28T22:03:08Z INFO  controller::state] Deleted Foo: qux
@@ -70,7 +68,23 @@ If you edit, and then apply, baz, you'll get:
 [2019-04-28T22:08:21Z INFO  controller::state] Modifyied Foo: baz (edit str)
 ```
 
-In all cases, the app maintains a simple state map for the `Foo` custom resource, which you can verify with `curl`.
+## Webapp output
+The sample web server exposes some debug information you can inspect with `curl`.
+
+A `GET /` will return a json result with the ad-hoc map type: `BTreeMap<String, (DateTime<Utc>, String)>` to represent the last seen event and its time for each touched `foo`.
+
+```sh
+curl localhost:8080/
+# {}
+kubectl apply -f yaml/crd-qux.yaml -n default
+curl localhost:8080/
+# {"qux":["2019-07-14T17:59:02.218644735Z","Add"]}
+kubectl delete -f yaml/crd-qux.yaml -n default
+curl localhost:8080/
+# {"qux":["2019-07-14T18:03:49.561768817Z","Deleted"]}
+```
 
 ## Events
-The current `handle_event` fn only prints and builds up internal state at the moment, but you can perform arbitrary kube actions using the client. See [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs)
+The event handler in [state.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs) currently does not mutate anything in kubernetes based on any events here as this is an example.
+
+You can perform arbitrary kube actions using the `client`. See [kube-rs/examples](https://github.com/clux/kube-rs/tree/master/examples) and the api docs for [kube::api::Api](https://clux.github.io/kube-rs/kube/api/struct.Api.html) for ideas.

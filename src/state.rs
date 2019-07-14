@@ -1,8 +1,9 @@
 use kube::{
     client::APIClient,
     config::Configuration,
-    api::{Informer, WatchEvent, Object, ListParams, Api, Void, KubeObject},
+    api::{Informer, WatchEvent, Object, Api, Void},
 };
+use chrono::prelude::*;
 use std::{
     env,
     collections::BTreeMap,
@@ -21,8 +22,10 @@ pub struct FooSpec {
 /// Type alias for the kubernetes object
 type Foo = Object<FooSpec, Void>;
 
-/// Alias for inner state (here we only care about the Spec)
-pub type Cache = BTreeMap<String, FooSpec>;
+/// Data for actix to expose on localhost:8080/
+///
+/// It's all the services it saw events for as keys, and the last event as value.
+pub type ExposedData = BTreeMap<String, (DateTime<Utc>, String)>;
 
 /// User state for Actix
 #[derive(Clone)]
@@ -30,7 +33,7 @@ pub struct State {
     /// An informer for Foo
     info: Informer<Foo>,
     /// Internal state built up by reconciliation loop
-    cache: Arc<RwLock<Cache>>,
+    data: Arc<RwLock<ExposedData>>,
     /// A kube client for performing cluster actions based on Foo events
     client: APIClient,
 }
@@ -45,19 +48,11 @@ impl State {
             .version("v1")
             .group("clux.dev")
             .within(&namespace);
-
-        let mut data = BTreeMap::new();
-        let init_state = foos.list(&ListParams::default())?;
-        for f in init_state.items {
-            data.insert(f.meta().name.clone(), f.spec);
-        }
-        let cache = Arc::new(RwLock::new(data));
-
         let info = Informer::new(foos)
             .timeout(15)
-            .init_from(init_state.metadata.resourceVersion.unwrap());
-
-        Ok(State { info, cache, client })
+            .init()?;
+        let data = Arc::new(RwLock::new(BTreeMap::new()));
+        Ok(State { info, data, client })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
@@ -70,25 +65,26 @@ impl State {
     }
 
     fn handle_event(&self, ev: WatchEvent<Foo>) -> Result<()> {
-        // This example only builds up an internal map from the events
+        // This example only builds some debug data based on events
         // You can use self.client here to make the necessary kube api calls
         match ev {
             WatchEvent::Added(o) => {
                 let name = o.metadata.name.clone();
                 info!("Added Foo: {} ({})", name, o.spec.info);
-                self.cache.write().unwrap()
-                    .entry(name).or_insert_with(|| o.spec);
+                self.data.write().unwrap()
+                    .entry(name).or_insert_with(|| (Utc::now(), "Add".into()));
             },
             WatchEvent::Modified(o) => {
                 let name = o.metadata.name.clone();
                 info!("Modified Foo: {} ({})", name, o.spec.info);
-                self.cache.write().unwrap()
-                    .entry(name).and_modify(|e| *e = o.spec);
+                self.data.write().unwrap()
+                    .entry(name).and_modify(|e| *e = (Utc::now(), "Modified".into()));
             },
             WatchEvent::Deleted(o) => {
-                info!("Deleted Foo: {}", o.metadata.name);
-                self.cache.write().unwrap()
-                    .remove(&o.metadata.name);
+                let name = o.metadata.name.clone();
+                info!("Deleted Foo: {}", name);
+                self.data.write().unwrap()
+                    .entry(name).or_insert_with(|| (Utc::now(), "Deleted".into()));
             },
             WatchEvent::Error(e) => {
                 warn!("Error event: {:?}", e); // we could refresh here
@@ -96,11 +92,11 @@ impl State {
         }
         Ok(())
     }
-    /// Exposed getters for read access to state for app
-    pub fn foos(&self) -> Result<Cache> {
+    /// Exposed getters for read access to data for app
+    pub fn foos(&self) -> Result<ExposedData> {
         // unwrap for users because Poison errors are not great to deal with atm
         // rather just have the handler 500 above in this case
-        let res = self.cache.read().unwrap().clone();
+        let res = self.data.read().unwrap().clone();
         Ok(res)
     }
 }
