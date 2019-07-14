@@ -25,10 +25,9 @@ fn main() {
     env_logger::init();
 
     // Set up kube access + fetch initial state. Crashing on failure here.
-    let cfg = match env::var("HOME").expect("have HOME dir").as_ref() {
-        "/app" => kube::config::incluster_config(),
-        _ => kube::config::load_kube_config(),
-    }.expect("Failed to load kube config");
+    let cfg = kube::config::incluster_config().or_else(|_| {
+        kube::config::load_kube_config()
+    }).expect("Failed to load kube config");
     let shared_state = state::init(cfg).expect("Failed to initialize state");
 
     // Web server
