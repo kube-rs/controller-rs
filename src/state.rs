@@ -102,14 +102,14 @@ impl State {
 /// This returns a `State` and calls `poll` on it continuously.
 pub fn init(cfg: Configuration) -> Result<State> {
     let state = State::new(APIClient::new(cfg))?; // for app to read
-    let state_clone = state.clone(); // clone for internal thread
+    let state_clone = state.clone(); // for poll thread to write
     std::thread::spawn(move || {
         loop {
-            state_clone.poll().map_err(|e| {
+            let _ = state_clone.poll().map_err(|e| {
                 error!("Kube state failed to recover: {}", e);
                 // rely on kube's crash loop backoff to retry sensibly:
                 std::process::exit(1);
-            }).unwrap();
+            });
         }
     });
     Ok(state)
