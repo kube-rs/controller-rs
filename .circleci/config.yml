@@ -25,9 +25,6 @@ jobs:
     docker:
       - image: clux/muslrust:stable
     working_directory: /volume
-    environment:
-      CACHE_VERSION: 11
-      DOCKER_BUILDKIT: 1
     steps:
       - checkout
       - restore_cache:
@@ -54,9 +51,6 @@ jobs:
     docker:
       - image: clux/muslrust:stable
     working_directory: /volume
-    environment:
-      CACHE_VERSION: 11
-      DOCKER_BUILDKIT: 1
     steps:
       - checkout
       - restore_cache:
