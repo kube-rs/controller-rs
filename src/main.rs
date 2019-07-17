@@ -1,6 +1,7 @@
 #![allow(unused_imports, unused_variables)]
 use std::env;
 use log::{info, warn, error, debug, trace};
+use prometheus::{TextEncoder, Encoder};
 pub use controller::*;
 
 use actix_web::{
@@ -8,9 +9,17 @@ use actix_web::{
   App, HttpServer, HttpRequest, HttpResponse, middleware,
 };
 
-fn index(state: Data<State>, _req: HttpRequest) -> HttpResponse {
-    let foos = state.foos().unwrap();
-    HttpResponse::Ok().json(foos)
+fn metrics(c: Data<Controller>, _req: HttpRequest) -> HttpResponse {
+    let metrics = c.metrics();
+    let encoder = TextEncoder::new();
+    let mut buffer = vec![];
+    encoder.encode(&metrics, &mut buffer).unwrap();
+    HttpResponse::Ok().body(buffer)
+}
+
+fn index(c: Data<Controller>, _req: HttpRequest) -> HttpResponse {
+    let state = c.state().unwrap();
+    HttpResponse::Ok().json(state)
 }
 
 fn health(_: HttpRequest) -> HttpResponse {
@@ -28,18 +37,19 @@ fn main() {
     let cfg = kube::config::incluster_config().or_else(|_| {
         kube::config::load_kube_config()
     }).expect("Failed to load kube config");
-    let shared_state = state::init(cfg).expect("Failed to initialize state");
+    let c = state::init(cfg).expect("Failed to initialize controller");
 
     // Web server
     let sys = actix::System::new("controller");
     HttpServer::new(move || {
         App::new()
-            .data(shared_state.clone())
+            .data(c.clone())
             .wrap(middleware::Logger::default()
                 .exclude("/health")
             )
-            .service(web::resource("/health").to(health))
             .service(web::resource("/").to(index))
+            .service(web::resource("/health").to(health))
+            .service(web::resource("/metrics").to(metrics))
         })
         .bind("0.0.0.0:8080").expect("Can not bind to 0.0.0.0:8080")
         .shutdown_timeout(0) // example server

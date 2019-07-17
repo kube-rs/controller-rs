@@ -1,3 +1,6 @@
+use prometheus::proto::MetricFamily;
+use prometheus::default_registry;
+use prometheus::{IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
 use kube::{
     client::APIClient,
     config::Configuration,
@@ -22,26 +25,51 @@ pub struct FooSpec {
 /// Type alias for the kubernetes object
 type Foo = Object<FooSpec, Void>;
 
-/// Data for actix to expose on localhost:8080/
-///
-/// It's all the services it saw events for as keys, and the last event as value.
-pub type ExposedData = BTreeMap<String, (DateTime<Utc>, String)>;
+/// Metrics exposed on /metrics
+#[derive(Clone)]
+pub struct Metrics {
+    pub handled_events: IntCounter,
+}
+impl Metrics {
+    fn new() -> Self {
+        Metrics {
+            handled_events: register_int_counter!("handled_events", "handled events").unwrap(),
+        }
+    }
+}
+
+/// In-memory state of current goings-on exposed on /
+#[derive(Clone, Serialize)]
+pub struct State {
+    #[serde(deserialize_with = "from_ts")]
+    pub last_event: DateTime<Utc>,
+}
+impl State {
+    fn new() -> Self {
+        State {
+            last_event: Utc::now()
+        }
+    }
+}
+
 
 /// User state for Actix
 #[derive(Clone)]
-pub struct State {
+pub struct Controller {
     /// An informer for Foo
     info: Informer<Foo>,
-    /// Internal state built up by reconciliation loop
-    data: Arc<RwLock<ExposedData>>,
+    /// In memory state
+    state: Arc<RwLock<State>>,
+    /// Various prometheus metrics
+    metrics: Arc<RwLock<Metrics>>,
     /// A kube client for performing cluster actions based on Foo events
     client: APIClient,
 }
 
-/// Example State machine that watches
+/// Example Controller that watches Foos
 ///
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
-impl State {
+impl Controller {
     fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").unwrap_or("default".into());
         let foos : Api<Foo> = Api::customResource(client.clone(), "foos")
@@ -51,8 +79,9 @@ impl State {
         let info = Informer::new(foos)
             .timeout(15)
             .init()?;
-        let data = Arc::new(RwLock::new(BTreeMap::new()));
-        Ok(State { info, data, client })
+        let metrics = Arc::new(RwLock::new(Metrics::new()));
+        let state = Arc::new(RwLock::new(State::new()));
+        Ok(Controller { info, metrics, state, client })
     }
     /// Internal poll for internal thread
     fn poll(&self) -> Result<()> {
@@ -69,52 +98,50 @@ impl State {
         // You can use self.client here to make the necessary kube api calls
         match ev {
             WatchEvent::Added(o) => {
-                let name = o.metadata.name.clone();
-                info!("Added Foo: {} ({})", name, o.spec.info);
-                self.data.write().unwrap()
-                    .entry(name).or_insert_with(|| (Utc::now(), "Add".into()));
+                info!("Added Foo: {} ({})", o.metadata.name, o.spec.info);
             },
             WatchEvent::Modified(o) => {
-                let name = o.metadata.name.clone();
-                info!("Modified Foo: {} ({})", name, o.spec.info);
-                self.data.write().unwrap()
-                    .entry(name).and_modify(|e| *e = (Utc::now(), "Modified".into()));
+                info!("Modified Foo: {} ({})", o.metadata.name, o.spec.info);
             },
             WatchEvent::Deleted(o) => {
-                let name = o.metadata.name.clone();
-                info!("Deleted Foo: {}", name);
-                self.data.write().unwrap()
-                    .entry(name).or_insert_with(|| (Utc::now(), "Deleted".into()));
+                info!("Deleted Foo: {}", o.metadata.name);
             },
             WatchEvent::Error(e) => {
                 warn!("Error event: {:?}", e); // we could refresh here
             }
         }
+        self.metrics.write().unwrap().handled_events.inc();
+        self.state.write().unwrap().last_event = Utc::now();
+
         Ok(())
     }
-    /// Exposed getters for read access to data for app
-    pub fn foos(&self) -> Result<ExposedData> {
+    /// Metrics getter
+    pub fn metrics(&self) -> Vec<MetricFamily> {
+        default_registry().gather()
+    }
+    /// State getter
+    pub fn state(&self) -> Result<State> {
         // unwrap for users because Poison errors are not great to deal with atm
         // rather just have the handler 500 above in this case
-        let res = self.data.read().unwrap().clone();
+        let res = self.state.read().unwrap().clone();
         Ok(res)
     }
 }
 
 /// Lifecycle initialization interface for app
 ///
-/// This returns a `State` and calls `poll` on it continuously.
-pub fn init(cfg: Configuration) -> Result<State> {
-    let state = State::new(APIClient::new(cfg))?; // for app to read
-    let state_clone = state.clone(); // for poll thread to write
+/// This returns a `Controller` and calls `poll` on it continuously.
+pub fn init(cfg: Configuration) -> Result<Controller> {
+    let c = Controller::new(APIClient::new(cfg))?; // for app to read
+    let c2 = c.clone(); // for poll thread to write
     std::thread::spawn(move || {
         loop {
-            let _ = state_clone.poll().map_err(|e| {
+            let _ = c2.poll().map_err(|e| {
                 error!("Kube state failed to recover: {}", e);
                 // rely on kube's crash loop backoff to retry sensibly:
                 std::process::exit(1);
             });
         }
     });
-    Ok(state)
+    Ok(c)
 }
