@@ -49,7 +49,7 @@ kubectl delete foo qux -n default
 then the app will soon print:
 
 ```
-[2019-04-28T22:03:08Z INFO  controller::controller] Deleted Foo: qux
+[2019-04-28T22:03:08Z INFO  controller::state] Deleted Foo: qux
 ```
 
 ditto if you try to apply one:
@@ -59,18 +59,17 @@ kubectl apply -f yaml/crd-baz.yaml -n default
 ```
 
 ```
-[2019-04-28T22:07:01Z INFO  controller::controller] Adding Foo: baz (this is baz)
+[2019-04-28T22:07:01Z INFO  controller::state] Adding Foo: baz (this is baz)
 ```
 
 If you edit, and then apply, baz, you'll get:
 
 ```
-[2019-04-28T22:08:21Z INFO  controller::controller] Modifyied Foo: baz (edit str)
+[2019-04-28T22:08:21Z INFO  controller::state] Modifyied Foo: baz (edit str)
 ```
 
 ## Webapp output
 The sample web server exposes some example metrics and debug information you can inspect with `curl`.
-
 
 ```sh
 $ kubectl apply -f yaml/crd-qux.yaml -n default
@@ -83,6 +82,6 @@ $ curl localhost:8080/
 ```
 
 ## Events
-The event handler in [controller.rs](https://github.com/clux/controller-rs/blob/master/src/controller.rs) currently does not mutate anything in kubernetes based on any events here as this is an example.
+The event handler in [controller.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs) currently does not mutate anything in kubernetes based on any events here as this is an example.
 
 You can perform arbitrary kube actions using the `client`. See [kube-rs/examples](https://github.com/clux/kube-rs/tree/master/examples) and the api docs for [kube::api::Api](https://clux.github.io/kube-rs/kube/api/struct.Api.html) for ideas.
