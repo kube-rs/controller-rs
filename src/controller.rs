@@ -1,6 +1,8 @@
-use prometheus::proto::MetricFamily;
-use prometheus::default_registry;
-use prometheus::{IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
+use prometheus::{
+    default_registry,
+    proto::MetricFamily,
+    {IntCounter, IntCounterVec, IntGauge, IntGaugeVec},
+};
 use kube::{
     client::APIClient,
     config::Configuration,
