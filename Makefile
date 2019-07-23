@@ -24,6 +24,7 @@ build:
 
 tag-latest: build
 	docker tag $(REPO)/$(NAME):$(VERSION) $(REPO)/$(NAME):latest
+	docker push $(REPO)/$(NAME):$(VERSION)
 	docker push $(REPO)/$(NAME):latest
 
 tag-semver: build
