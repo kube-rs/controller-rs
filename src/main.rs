@@ -26,7 +26,9 @@ fn health(_: HttpRequest) -> HttpResponse {
     HttpResponse::Ok().json("healthy")
 }
 
-fn main() {
+// TODO: tokio main interaction with actix?
+#[tokio::main]
+async fn main() -> Result<()> {
     // Logging
     if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "actix_web=info,controller=info,kube=debug");
@@ -34,10 +36,11 @@ fn main() {
     env_logger::init();
 
     // Set up kube access + fetch initial state. Crashing on failure here.
-    let cfg = kube::config::incluster_config().or_else(|_| {
-        kube::config::load_kube_config()
-    }).expect("Failed to load kube config");
-    let c = state::init(cfg).expect("Failed to initialize controller");
+    let cfg = match kube::config::incluster_config() {
+        Ok(c) => c,
+        Err(_) => kube::config::load_kube_config().await?,
+    };
+    let c = state::init(cfg).await.expect("Failed to initialize controller");
 
     // Web server
     let sys = actix::System::new("controller");
@@ -56,4 +59,5 @@ fn main() {
         .start();
     info!("Starting listening on 0.0.0.0:8080");
     let _ = sys.run();
+    Ok(())
 }

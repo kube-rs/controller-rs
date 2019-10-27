@@ -72,7 +72,7 @@ pub struct Controller {
 ///
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl Controller {
-    fn new(client: APIClient) -> Result<Self> {
+    async fn new(client: APIClient) -> Result<Self> {
         let namespace = env::var("NAMESPACE").unwrap_or("default".into());
         let foos : Api<Foo> = Api::customResource(client.clone(), "foos")
             .version("v1")
@@ -80,14 +80,15 @@ impl Controller {
             .within(&namespace);
         let info = Informer::new(foos)
             .timeout(15)
-            .init()?;
+            .init()
+            .await?;
         let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
         Ok(Controller { info, metrics, state, client })
     }
     /// Internal poll for internal thread
-    fn poll(&self) -> Result<()> {
-        self.info.poll()?;
+    async fn poll(&self) -> Result<()> {
+        self.info.poll().await?;
         // in this example we always just handle all the events as they happen:
         while let Some(event) = self.info.pop() {
             self.handle_event(event)?;
@@ -133,12 +134,12 @@ impl Controller {
 /// Lifecycle initialization interface for app
 ///
 /// This returns a `Controller` and calls `poll` on it continuously.
-pub fn init(cfg: Configuration) -> Result<Controller> {
-    let c = Controller::new(APIClient::new(cfg))?; // for app to read
+pub async fn init(cfg: Configuration) -> Result<Controller> {
+    let c = Controller::new(APIClient::new(cfg)).await?; // for app to read
     let c2 = c.clone(); // for poll thread to write
-    std::thread::spawn(move || {
+    tokio::spawn(async move {
         loop {
-            let _ = c2.poll().map_err(|e| {
+            let _ = c2.poll().await.map_err(|e| {
                 error!("Kube state failed to recover: {}", e);
                 // rely on kube's crash loop backoff to retry sensibly:
                 std::process::exit(1);
