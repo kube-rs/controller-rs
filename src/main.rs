@@ -36,10 +36,7 @@ async fn main() -> Result<()> {
     env_logger::init();
 
     // Set up kube access + fetch initial state. Crashing on failure here.
-    let cfg = match kube::config::incluster_config() {
-        Ok(c) => c,
-        Err(_) => kube::config::load_kube_config().await?,
-    };
+    let cfg = kube::config::load_kube_config().await.or_else(|_| kube::config::incluster_config())?;
     let c = state::init(cfg).await.expect("Failed to initialize controller");
 
     // Web server
