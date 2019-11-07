@@ -14,7 +14,8 @@ name = "controller"
 path = "src/lib.rs"
 
 [dependencies]
-kube = { git = "https://github.com/clux/kube-rs", rev = "16a48691ac290a94d68af251150df0918dc77aeb", features = [] }
+#kube = { git = "https://github.com/clux/kube-rs", rev = "16a48691ac290a94d68af251150df0918dc77aeb", features = [] }
+kube = { features = [], version = "0.18.0" }
 actix-web = "1.0.8"
 actix = "0.8.3"
 serde = "1.0.102"
