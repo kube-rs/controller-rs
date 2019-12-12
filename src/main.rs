@@ -4,11 +4,7 @@ use log::{info, warn, error, debug, trace};
 //use prometheus::{TextEncoder, Encoder};
 pub use controller::*;
 
-use actix_web::{
-  web::{self, Data},
-  App, HttpServer, HttpRequest, HttpResponse, middleware,
-};
-
+/*
 #[get("/metrics")]
 fn metrics(c: Data<Controller>, _req: HttpRequest) -> impl Responder {
     let metrics = c.metrics();
@@ -18,8 +14,12 @@ fn metrics(c: Data<Controller>, _req: HttpRequest) -> impl Responder {
     HttpResponse::Ok().body(buffer)
 }
 
+*/
 
-
+use actix_web::{
+    web::{self, Data},
+    HttpRequest, HttpResponse, middleware
+};
 use actix_web::{get, App, HttpServer, Responder};
 
 #[get("/health")]
@@ -42,10 +42,12 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     // Set up kube access + fetch initial state. Crashing on failure here.
-    let cfg = kube::config::incluster_config().or_else(|_| {
-        kube::config::load_kube_config()
-    }).expect("Failed to load kube config");
-    let c = state::init(cfg).expect("Failed to initialize controller");
+    let cfg = if let Ok(c) = kube::config::incluster_config() {
+        c
+    } else {
+        kube::config::load_kube_config().await.expect("Failed to load kube config")
+    };
+    let c = state::init(cfg).await.expect("Failed to initialize controller");
 
     HttpServer::new(move || {
         App::new()
@@ -53,8 +55,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default()
                 .exclude("/health")
             )
-            .service(web::resource("/").to(index))
-            .service(web::resource("/health").to(health))
+            .service(index)
+            .service(health)
             //.service(web::resource("/metrics").to(metrics))
         })
         .bind("0.0.0.0:8080").expect("Can not bind to 0.0.0.0:8080")
