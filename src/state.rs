@@ -1,8 +1,8 @@
-//use prometheus::{
-//    default_registry,
-//    proto::MetricFamily,
-//    {IntCounter, IntCounterVec, IntGauge, IntGaugeVec},
-//};
+use prometheus::{
+    default_registry,
+    proto::MetricFamily,
+    {IntCounter, IntCounterVec, IntGauge, IntGaugeVec},
+};
 use kube::{
     client::APIClient,
     config::Configuration,
@@ -29,17 +29,17 @@ pub struct FooSpec {
 type Foo = Object<FooSpec, Void>;
 
 /// Metrics exposed on /metrics
-//#[derive(Clone)]
-//pub struct Metrics {
-//    pub handled_events: IntCounter,
-//}
-//impl Metrics {
-//    fn new() -> Self {
-//        Metrics {
-//            handled_events: register_int_counter!("handled_events", "handled events").unwrap(),
-//        }
-//    }
-//}
+#[derive(Clone)]
+pub struct Metrics {
+    pub handled_events: IntCounter,
+}
+impl Metrics {
+    fn new() -> Self {
+        Metrics {
+            handled_events: register_int_counter!("handled_events", "handled events").unwrap(),
+        }
+    }
+}
 
 /// In-memory state of current goings-on exposed on /
 #[derive(Clone, Serialize)]
@@ -64,7 +64,7 @@ pub struct Controller {
     /// In memory state
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
-    //metrics: Arc<RwLock<Metrics>>,
+    metrics: Arc<RwLock<Metrics>>,
     /// A kube client for performing cluster actions based on Foo events
     client: APIClient,
 }
@@ -83,10 +83,9 @@ impl Controller {
             .timeout(15)
             .init()
             .await?;
-        //let metrics = Arc::new(RwLock::new(Metrics::new()));
+        let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
-        //Ok(Controller { info, metrics, state, client })
-        Ok(Controller { info, state, client })
+        Ok(Controller { info, metrics, state, client })
     }
     /// Internal poll for internal thread
     async fn poll(&self) -> Result<()> {
@@ -120,9 +119,9 @@ impl Controller {
         Ok(())
     }
     /// Metrics getter
-    //pub fn metrics(&self) -> Vec<MetricFamily> {
-    //    default_registry().gather()
-    //}
+    pub fn metrics(&self) -> Vec<MetricFamily> {
+        default_registry().gather()
+    }
     /// State getter
     pub fn state(&self) -> Result<State> {
         // unwrap for users because Poison errors are not great to deal with atm

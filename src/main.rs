@@ -1,26 +1,23 @@
 #![allow(unused_imports, unused_variables)]
 use std::env;
 use log::{info, warn, error, debug, trace};
-//use prometheus::{TextEncoder, Encoder};
+use prometheus::{TextEncoder, Encoder};
 pub use controller::*;
-
-/*
-#[get("/metrics")]
-fn metrics(c: Data<Controller>, _req: HttpRequest) -> impl Responder {
-    let metrics = c.metrics();
-    let encoder = TextEncoder::new();
-    let mut buffer = vec![];
-    encoder.encode(&metrics, &mut buffer).unwrap();
-    HttpResponse::Ok().body(buffer)
-}
-
-*/
 
 use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse, middleware
 };
 use actix_web::{get, App, HttpServer, Responder};
+
+#[get("/metrics")]
+async fn metrics(c: Data<Controller>, _req: HttpRequest) -> impl Responder {
+    let metrics = c.metrics();
+    let encoder = TextEncoder::new();
+    let mut buffer = vec![];
+    encoder.encode(&metrics, &mut buffer).unwrap();
+    HttpResponse::Ok().body(buffer)
+}
 
 #[get("/health")]
 async fn health(_: HttpRequest) -> impl Responder {
@@ -57,7 +54,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(index)
             .service(health)
-            //.service(web::resource("/metrics").to(metrics))
+            .service(metrics)
         })
         .bind("0.0.0.0:8080").expect("Can not bind to 0.0.0.0:8080")
         .shutdown_timeout(0) // example server
