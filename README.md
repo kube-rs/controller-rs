@@ -23,8 +23,8 @@ You need a valid local kube config with sufficient access (`foobar` service acco
 Start the server with `cargo run`:
 
 ```sh
-export NAMESPACE=default # specify if you applied it elsewhere
-cargo run # keep this running
+export NAMESPACE=default
+cargo run
 ```
 
 ### In-cluster Config
