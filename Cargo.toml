@@ -18,7 +18,7 @@ path = "src/lib.rs"
 kube = { git = "https://github.com/clux/kube-rs", rev = "f375ca38a82146c4616d8a162879c46fec60d420" }
 actix-web = "2.0.0-alpha.3"
 actix-rt = "1.0.0-alpha.3"
-actix = "0.8.3"
+#actix = "0.8.3"
 serde = "1.0.94"
 serde_derive = "1.0.94"
 failure = "0.1.5"
@@ -27,4 +27,4 @@ env_logger = "0.6.1"
 chrono = { version = "0.4.7", features = ["serde"] }
 prometheus = "0.7.0"
 futures = "0.3.1"
-tokio = { version = "0.2.4", features = ["full"] }
+tokio = "0.2.4"
