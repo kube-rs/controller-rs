@@ -1,29 +1,25 @@
-use prometheus::{
-    default_registry,
-    proto::MetricFamily,
-    {IntCounter, IntCounterVec, IntGauge, IntGaugeVec},
-};
-use kube::{
-    client::APIClient,
-    config::Configuration,
-    api::{Informer, WatchEvent, Object, Api, Void},
-};
-use futures::StreamExt;
+use crate::*;
 use chrono::prelude::*;
+use futures::StreamExt;
+use kube::{
+    api::{Api, Informer, Object, Void, WatchEvent},
+    client::Client,
+    config::Config,
+};
+use prometheus::{default_registry, proto::MetricFamily, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
 use std::{
-    env,
     collections::BTreeMap,
+    env,
     sync::{Arc, RwLock},
 };
-use crate::*;
 
 /// Approximation of the CRD we want to work with
 /// Replace with own struct.
 /// Add serialize for returnability.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct FooSpec {
-  name: String,
-  info: String,
+    name: String,
+    info: String,
 }
 /// Type alias for the kubernetes object
 type Foo = Object<FooSpec, Void>;
@@ -50,7 +46,7 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            last_event: Utc::now()
+            last_event: Utc::now(),
         }
     }
 }
@@ -66,27 +62,30 @@ pub struct Controller {
     /// Various prometheus metrics
     metrics: Arc<RwLock<Metrics>>,
     /// A kube client for performing cluster actions based on Foo events
-    client: APIClient,
+    client: Client,
 }
 
 /// Example Controller that watches Foos
 ///
 /// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
 impl Controller {
-    async fn new(client: APIClient) -> Result<Self> {
+    async fn new(client: Client) -> Result<Self> {
         let namespace = env::var("NAMESPACE").unwrap_or("default".into());
-        let foos : Api<Foo> = Api::customResource(client.clone(), "foos")
+        let foos: Api<Foo> = Api::customResource(client.clone(), "foos")
             .version("v1")
             .group("clux.dev")
             .within(&namespace);
-        let info = Informer::new(foos)
-            .timeout(15)
-            .init()
-            .await?;
+        let info = Informer::new(foos).timeout(15).init().await?;
         let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
-        Ok(Controller { info, metrics, state, client })
+        Ok(Controller {
+            info,
+            metrics,
+            state,
+            client,
+        })
     }
+
     /// Internal poll for internal thread
     async fn poll(&self) -> Result<()> {
         let mut foos = self.info.poll().await?.boxed();
@@ -102,13 +101,13 @@ impl Controller {
         match ev {
             WatchEvent::Added(o) => {
                 info!("Added Foo: {} ({})", o.metadata.name, o.spec.info);
-            },
+            }
             WatchEvent::Modified(o) => {
                 info!("Modified Foo: {} ({})", o.metadata.name, o.spec.info);
-            },
+            }
             WatchEvent::Deleted(o) => {
                 info!("Deleted Foo: {}", o.metadata.name);
-            },
+            }
             WatchEvent::Error(e) => {
                 warn!("Error event: {:?}", e); // we could refresh here
             }
@@ -118,10 +117,12 @@ impl Controller {
 
         Ok(())
     }
+
     /// Metrics getter
     pub fn metrics(&self) -> Vec<MetricFamily> {
         default_registry().gather()
     }
+
     /// State getter
     pub fn state(&self) -> Result<State> {
         // unwrap for users because Poison errors are not great to deal with atm
@@ -134,8 +135,8 @@ impl Controller {
 /// Lifecycle initialization interface for app
 ///
 /// This returns a `Controller` and calls `poll` on it continuously.
-pub async fn init(cfg: Configuration) -> Result<Controller> {
-    let c = Controller::new(APIClient::new(cfg)).await?; // for app to read
+pub async fn init(cfg: Client) -> Result<Controller> {
+    let c = Controller::new(client).await?; // for app to read
     let c2 = c.clone(); // for poll thread to write
     tokio::spawn(async move {
         loop {
