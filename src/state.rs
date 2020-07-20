@@ -1,6 +1,6 @@
 use crate::{Error, FooPatchFailed, Result, SerializationFailed};
 use chrono::prelude::*;
-use futures::StreamExt;
+use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
     api::{Api, ListParams, Meta, PatchParams},
     client::Client,
@@ -116,15 +116,13 @@ pub struct Manager {
     metrics: Arc<RwLock<Metrics>>,
 }
 
-type DrainerFut = futures::future::BoxFuture<'static, ()>;
-
 /// Example Manager that owns a Controller for Foo
 impl Manager {
     /// Lifecycle initialization interface for app
     ///
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
-    pub fn new(client: Client) -> (Self, DrainerFut) {
+    pub fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
         let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
@@ -138,13 +136,14 @@ impl Manager {
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
             .for_each(|o| {
-                println!("Applied {:?}", o);
+                println!("Reconciled {:?}", o);
                 futures::future::ready(())
-            });
+            })
+            .boxed();
         // what we do with the controller stream (.run()) does not matter ^^
         // but we do need to consume it, hence general printing + return future
 
-        (Self { state, metrics }, Box::pin(drainer))
+        (Self { state, metrics }, drainer)
     }
 
     /// Metrics getter
