@@ -38,11 +38,10 @@ async fn main() -> Result<()> {
     env_logger::init();
     let client = kube::Client::try_default().await.expect("create client");
     let (manager, drainer) = Manager::new(client);
-    let manager_state = manager.clone();
 
     let server = HttpServer::new(move || {
         App::new()
-            .data(manager_state.clone())
+            .data(manager.clone())
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)

@@ -6,18 +6,11 @@ use kube::{
     client::Client,
 };
 use kube_derive::CustomResource;
-use kube_runtime::{
-    controller::{Context, Controller, ReconcilerAction},
-    reflector::ObjectRef,
-};
+use kube_runtime::controller::{Context, Controller, ReconcilerAction};
 use prometheus::{default_registry, proto::MetricFamily, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
 use serde_json::json;
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
-use std::{
-    collections::BTreeMap,
-    env,
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
 
 /// Our Foo custom resource spec
@@ -33,7 +26,6 @@ pub struct FooSpec {
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct FooStatus {
     is_bad: bool,
-    replicas: i32,
 }
 
 // Context for our reconciler
@@ -57,14 +49,13 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
 
     let new_status = serde_json::to_vec(&json!({
         "status": FooStatus {
-            is_bad: foo.spec.info.contains("bad words"),
-            replicas: 1
+            is_bad: foo.spec.info.contains("bad"),
         }
     }))
     .context(SerializationFailed)?;
-    let ss_apply = PatchParams::default_apply().force();
+    let ps = PatchParams::default(); //TODO: fix default_apply().force()
     let _o = foos
-        .patch_status(&name, &ss_apply, new_status)
+        .patch_status(&name, &ps, new_status)
         .await
         .context(FooPatchFailed)?;
 
@@ -140,7 +131,7 @@ impl Manager {
                 futures::future::ready(())
             })
             .boxed();
-        // what we do with the controller stream (.run()) does not matter ^^
+        // what we do with the controller stream from .run() ^^ does not matter
         // but we do need to consume it, hence general printing + return future
 
         (Self { state, metrics }, drainer)
