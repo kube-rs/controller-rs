@@ -1,28 +1,61 @@
-use crate::*;
+use crate::{Error, Result};
 use chrono::prelude::*;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use kube::{
-    api::{Api, Informer, Object, Void, WatchEvent},
+    api::{Api, ListParams},
     client::Client,
-    config::Config,
 };
+use kube_derive::CustomResource;
+use kube_runtime::{
+    controller::{Context, Controller, ReconcilerAction},
+    reflector::ObjectRef,
+};
+use tokio::time::Duration;
+// TODO: drop serde_json
 use prometheus::{default_registry, proto::MetricFamily, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
 use std::{
     collections::BTreeMap,
     env,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex},
 };
+use tokio::sync::RwLock;
 
-/// Approximation of the CRD we want to work with
-/// Replace with own struct.
-/// Add serialize for returnability.
-#[derive(Deserialize, Serialize, Clone)]
+/// Our Foo custom resource spec
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
+#[kube(group = "clux.dev", version = "v1", namespaced)]
+#[kube(apiextensions = "v1beta1")]
 pub struct FooSpec {
     name: String,
     info: String,
 }
-/// Type alias for the kubernetes object
-type Foo = Object<FooSpec, Void>;
+
+// Context for our reconciler
+#[derive(Clone)]
+struct Data {
+    /// kubernetes client
+    client: Client,
+    /// In memory state
+    state: Arc<RwLock<State>>,
+    /// Various prometheus metrics
+    metrics: Arc<RwLock<Metrics>>,
+}
+
+async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction> {
+    let client = ctx.get_ref().client.clone();
+    ctx.get_ref().state.write().await.last_event = Utc::now();
+    info!("Reconcile {:?}", foo);
+    // TODO: do something based on Foo
+    // If no events were received, check back every 30 minutes
+    Ok(ReconcilerAction {
+        requeue_after: Some(Duration::from_secs(3600 / 2)),
+    })
+}
+fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
+    warn!("reconcile failed: {}", error);
+    ReconcilerAction {
+        requeue_after: Some(Duration::from_secs(360)),
+    }
+}
 
 /// Metrics exposed on /metrics
 #[derive(Clone)]
@@ -51,70 +84,58 @@ impl State {
     }
 }
 
-
-/// User state for Actix
+/// Data owned by the Manager
 #[derive(Clone)]
-pub struct Controller {
-    /// An informer for Foo
-    info: Informer<Foo>,
+pub struct Manager {
     /// In memory state
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
     metrics: Arc<RwLock<Metrics>>,
-    /// A kube client for performing cluster actions based on Foo events
-    client: Client,
+    /// The controller stream that the Manager must drain
+    sync_stream: Arc<Mutex<FooStream>>,
 }
 
-/// Example Controller that watches Foos
-///
-/// This only deals with a single CRD, and it takes the NAMESPACE from an evar.
-impl Controller {
-    async fn new(client: Client) -> Result<Self> {
-        let namespace = env::var("NAMESPACE").unwrap_or("default".into());
-        let foos: Api<Foo> = Api::customResource(client.clone(), "foos")
-            .version("v1")
-            .group("clux.dev")
-            .within(&namespace);
-        let info = Informer::new(foos).timeout(15).init().await?;
+// NB: FooStream is a Send + Sync boxed stream from Controller
+// This is to ensure something is draining the reconciler
+// Awkward atm because kube-runtime's Stream is not Sync (yet)
+use futures_util::stream::LocalBoxStream;
+type ControllerErr = kube_runtime::controller::Error<Error, kube_runtime::watcher::Error>;
+type StreamItem = std::result::Result<(ObjectRef<Foo>, ReconcilerAction), ControllerErr>;
+type FooStream = LocalBoxStream<'static, StreamItem>;
+
+
+/// Example Manager that owns a Controller for Foo
+impl Manager {
+    /// Lifecycle initialization interface for app
+    ///
+    /// This returns a `Manager` that drives a `Controller`
+    /// and provides getters for state the reconciler is generating
+    pub fn new(client: Client) -> Self {
         let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
-        Ok(Controller {
-            info,
-            metrics,
+        let context = Context::new(Data {
+            client: client.clone(),
+            metrics: metrics.clone(),
+            state: state.clone(),
+        });
+        let foos = Api::<Foo>::all(client);
+        let reconcile_stream = Controller::new(foos, ListParams::default())
+            //.owns(cms, ListParams::default())
+            .run(reconcile, error_policy, context);
+        let sync_stream = Arc::new(Mutex::new(reconcile_stream.boxed_local()));
+
+        Self {
             state,
-            client,
-        })
+            metrics,
+            sync_stream,
+        }
     }
 
-    /// Internal poll for internal thread
-    async fn poll(&self) -> Result<()> {
-        let mut foos = self.info.poll().await?.boxed();
-        while let Some(event) = foos.next().await {
-            self.handle_event(event?)?;
+    pub async fn run(&self) -> Result<()> {
+        let mut su = self.sync_stream.lock().unwrap();
+        while let Some(o) = su.try_next().await.unwrap() {
+            println!("Applied {:?}", o);
         }
-        Ok(())
-    }
-
-    fn handle_event(&self, ev: WatchEvent<Foo>) -> Result<()> {
-        // This example only builds some debug data based on events
-        // You can use self.client here to make the necessary kube api calls
-        match ev {
-            WatchEvent::Added(o) => {
-                info!("Added Foo: {} ({})", o.metadata.name, o.spec.info);
-            }
-            WatchEvent::Modified(o) => {
-                info!("Modified Foo: {} ({})", o.metadata.name, o.spec.info);
-            }
-            WatchEvent::Deleted(o) => {
-                info!("Deleted Foo: {}", o.metadata.name);
-            }
-            WatchEvent::Error(e) => {
-                warn!("Error event: {:?}", e); // we could refresh here
-            }
-        }
-        //self.metrics.write().unwrap().handled_events.inc();
-        self.state.write().unwrap().last_event = Utc::now();
-
         Ok(())
     }
 
@@ -124,28 +145,7 @@ impl Controller {
     }
 
     /// State getter
-    pub fn state(&self) -> Result<State> {
-        // unwrap for users because Poison errors are not great to deal with atm
-        // rather just have the handler 500 above in this case
-        let res = self.state.read().unwrap().clone();
-        Ok(res)
+    pub async fn state(&self) -> State {
+        self.state.read().await.clone()
     }
-}
-
-/// Lifecycle initialization interface for app
-///
-/// This returns a `Controller` and calls `poll` on it continuously.
-pub async fn init(cfg: Client) -> Result<Controller> {
-    let c = Controller::new(client).await?; // for app to read
-    let c2 = c.clone(); // for poll thread to write
-    tokio::spawn(async move {
-        loop {
-            if let Err(e) = c2.poll().await {
-                error!("Kube state failed to recover: {}", e);
-                // rely on kube's crash loop backoff to retry sensibly:
-                std::process::exit(1);
-            }
-        }
-    });
-    Ok(c)
 }

@@ -14,18 +14,24 @@ name = "controller"
 path = "src/lib.rs"
 
 [dependencies]
-kube = { version = "0.36.0", features = [] }
-kube-runtime = "0.36.0"
-#kube = { git = "https://github.com/clux/kube-rs", rev = "f375ca38a82146c4616d8a162879c46fec60d420" }
-k8s-openapi = { version = "0.8.0", features = ["v1_17"], default-features=false }
+actix-rt = "1.1.0"
 actix-web = "2.0.0"
+futures = "0.3.1"
+futures-util = "0.3.5"
+tokio = { version = "0.2.21", features = ["full"] }
+prometheus = "0.7.0"
+#kube = { version = "0.36.0", features = [] }
+#kube-runtime = "0.36.0"
+#kube-derive = "0.36.0"
+kube = { git = "https://github.com/clux/kube-rs", rev = "d095d2eec79a43784b438f8f1bdda1b84dd68c40" }
+kube-derive = { git = "https://github.com/clux/kube-rs", rev = "d095d2eec79a43784b438f8f1bdda1b84dd68c40" }
+kube-runtime = { git = "https://github.com/clux/kube-rs", rev = "d095d2eec79a43784b438f8f1bdda1b84dd68c40" }
+k8s-openapi = { version = "0.9.0", features = ["v1_17"], default-features=false }
 serde = "1.0.94"
 serde_derive = "1.0.94"
-anyhow = "1.0.25"
+serde_json = "1.0.56"
+chrono = { version = "0.4.7", features = ["serde"] }
 log = "0.4.6"
 env_logger = "0.7.1"
-chrono = { version = "0.4.7", features = ["serde"] }
-prometheus = "0.7.0"
-futures = "0.3.1"
-tokio = "0.2.4"
-futures-util = "0.3.5"
+snafu = "0.6.8"
+color-eyre = "0.5.0"
