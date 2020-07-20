@@ -42,6 +42,7 @@ async fn main() -> Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
+            //.data(manager.clone())
             .data(Manager::new(client.clone()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
