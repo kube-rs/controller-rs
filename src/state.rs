@@ -121,10 +121,10 @@ pub struct Manager {
 // NB: FooStream is a Send + Sync boxed stream from Controller
 // This is to ensure something is draining the reconciler
 // Awkward atm because kube-runtime's Stream is not Sync (yet)
-use futures_util::stream::LocalBoxStream;
+use futures_util::stream::BoxStream;
 type ControllerErr = kube_runtime::controller::Error<Error, kube_runtime::watcher::Error>;
 type StreamItem = std::result::Result<(ObjectRef<Foo>, ReconcilerAction), ControllerErr>;
-type FooStream = LocalBoxStream<'static, StreamItem>;
+type FooStream = BoxStream<'static, StreamItem>;
 
 
 /// Example Manager that owns a Controller for Foo
@@ -145,7 +145,7 @@ impl Manager {
         let reconcile_stream = Controller::new(foos, ListParams::default())
             //.owns(cms, ListParams::default())
             .run(reconcile, error_policy, context);
-        let sync_stream = Arc::new(Mutex::new(reconcile_stream.boxed_local()));
+        let sync_stream = Arc::new(Mutex::new(reconcile_stream.boxed()));
 
         Self {
             state,
