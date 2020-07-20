@@ -1,6 +1,6 @@
 use crate::{Error, FooPatchFailed, Result, SerializationFailed};
 use chrono::prelude::*;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use kube::{
     api::{Api, ListParams, Meta, PatchParams},
     client::Client,
@@ -114,26 +114,17 @@ pub struct Manager {
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
     metrics: Arc<RwLock<Metrics>>,
-    /// The controller stream that the Manager must drain
-    sync_stream: Arc<Mutex<FooStream>>,
 }
 
-// NB: FooStream is a Send + Sync boxed stream from Controller
-// This is to ensure something is draining the reconciler
-// Awkward atm because kube-runtime's Stream is not Sync (yet)
-use futures_util::stream::BoxStream;
-type ControllerErr = kube_runtime::controller::Error<Error, kube_runtime::watcher::Error>;
-type StreamItem = std::result::Result<(ObjectRef<Foo>, ReconcilerAction), ControllerErr>;
-type FooStream = BoxStream<'static, StreamItem>;
-
+type DrainerFut = futures::future::BoxFuture<'static, ()>;
 
 /// Example Manager that owns a Controller for Foo
 impl Manager {
     /// Lifecycle initialization interface for app
     ///
-    /// This returns a `Manager` that drives a `Controller`
-    /// and provides getters for state the reconciler is generating
-    pub fn new(client: Client) -> Self {
+    /// This returns a `Manager` that drives a `Controller` + a future to be awaited
+    /// It is up to `main` to wait for the controller stream.
+    pub fn new(client: Client) -> (Self, DrainerFut) {
         let metrics = Arc::new(RwLock::new(Metrics::new()));
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
@@ -142,24 +133,18 @@ impl Manager {
             state: state.clone(),
         });
         let foos = Api::<Foo>::all(client);
-        let reconcile_stream = Controller::new(foos, ListParams::default())
-            //.owns(cms, ListParams::default())
-            .run(reconcile, error_policy, context);
-        let sync_stream = Arc::new(Mutex::new(reconcile_stream.boxed()));
 
-        Self {
-            state,
-            metrics,
-            sync_stream,
-        }
-    }
+        let drainer = Controller::new(foos, ListParams::default())
+            .run(reconcile, error_policy, context)
+            .filter_map(|x| async move { std::result::Result::ok(x) })
+            .for_each(|o| {
+                println!("Applied {:?}", o);
+                futures::future::ready(())
+            });
+        // what we do with the controller stream (.run()) does not matter ^^
+        // but we do need to consume it, hence general printing + return future
 
-    pub async fn run(&self) -> Result<()> {
-        let mut su = self.sync_stream.lock().unwrap();
-        while let Some(o) = su.try_next().await.unwrap() {
-            println!("Applied {:?}", o);
-        }
-        Ok(())
+        (Self { state, metrics }, Box::pin(drainer))
     }
 
     /// Metrics getter

@@ -1151,7 +1151,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.36.0"
-source = "git+https://github.com/teozkr/kube-rs?rev=1beb0f4da2384c39a0ad1dc590f4c972fe438f59#1beb0f4da2384c39a0ad1dc590f4c972fe438f59"
+source = "git+https://github.com/clux/kube-rs?rev=da9b50189c8127d600d5e238f6f037d75562a27e#da9b50189c8127d600d5e238f6f037d75562a27e"
 dependencies = [
  "Inflector",
  "base64 0.12.3",
@@ -1180,7 +1180,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.36.0"
-source = "git+https://github.com/teozkr/kube-rs?rev=1beb0f4da2384c39a0ad1dc590f4c972fe438f59#1beb0f4da2384c39a0ad1dc590f4c972fe438f59"
+source = "git+https://github.com/clux/kube-rs?rev=da9b50189c8127d600d5e238f6f037d75562a27e#da9b50189c8127d600d5e238f6f037d75562a27e"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -1192,7 +1192,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.36.0"
-source = "git+https://github.com/teozkr/kube-rs?rev=1beb0f4da2384c39a0ad1dc590f4c972fe438f59#1beb0f4da2384c39a0ad1dc590f4c972fe438f59"
+source = "git+https://github.com/clux/kube-rs?rev=da9b50189c8127d600d5e238f6f037d75562a27e#da9b50189c8127d600d5e238f6f037d75562a27e"
 dependencies = [
  "dashmap",
  "derivative",
