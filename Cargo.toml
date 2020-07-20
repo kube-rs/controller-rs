@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 
@@ -16,16 +16,12 @@ path = "src/lib.rs"
 [dependencies]
 actix-rt = "1.1.0"
 actix-web = "2.0.0"
-futures = "0.3.1"
-futures-util = "0.3.5"
-tokio = { version = "0.2.21", features = ["full"] }
-prometheus = "0.7.0"
-#kube = { version = "0.36.0", features = [] }
-#kube-runtime = "0.36.0"
-#kube-derive = "0.36.0"
-kube = { git = "https://github.com/clux/kube-rs", rev = "da9b50189c8127d600d5e238f6f037d75562a27e" }
-kube-derive = { git = "https://github.com/clux/kube-rs", rev = "da9b50189c8127d600d5e238f6f037d75562a27e" }
-kube-runtime = { git = "https://github.com/clux/kube-rs", rev = "da9b50189c8127d600d5e238f6f037d75562a27e" }
+futures = "0.3.5"
+tokio = { version = "0.2.21", features = ["macros"] }
+prometheus = "0.9.0"
+kube = "0.37.0"
+kube-runtime = "0.37.0"
+kube-derive = "0.37.0"
 k8s-openapi = { version = "0.9.0", features = ["v1_17"], default-features=false }
 serde = "1.0.94"
 serde_derive = "1.0.94"
