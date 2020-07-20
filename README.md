@@ -22,7 +22,7 @@ kubectl apply -f yaml/instance-bad.yaml
 ## Running
 
 ### Local Config
-You need a valid local kube config with sufficient access (`foobar` service account has sufficient access if you want to [impersonate](https://clux.github.io/probes/post/2019-03-31-impersonating-kube-accounts/) the one in `yaml/access.yaml`).
+You need a valid local kube config with sufficient access (`clux` service account has sufficient access if you want to [impersonate](https://clux.github.io/probes/post/2019-03-31-impersonating-kube-accounts/) the one in `yaml/access.yaml`).
 
 Start the server with `cargo run`:
 

@@ -10,34 +10,32 @@ automountServiceAccountToken: true
 
 ---
 # Access for the service account
-kind: Role
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: default
-  name: foo-controller-role
+  name: control-foos
 rules:
-  - apiGroups:
-    - clux.dev
-    resources:
-    - foos
+  - apiGroups: ["clux.dev"]
+    resources: ["foos", "foos/status"]
     verbs:
     - get
     - watch
     - list
+    - patch
 
 ---
 # Binding the role to the account in default
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: foo-controller-binding
-  namespace: default
 subjects:
 - kind: ServiceAccount
+  namespace: default
   name: foo-controller
 roleRef:
-  kind: Role
-  name: foo-controller-role
+  kind: ClusterRole
+  name: control-foos
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -80,8 +78,8 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:0.4.0"
-        imagePullPolicy: IfNotPresent
+        image: "clux/controller:latest"
+        imagePullPolicy: Always
         resources:
           limits:
             cpu: 200m
@@ -99,6 +97,3 @@ spec:
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5
-        env:
-        - name: NAMESPACE
-          value: "default"
