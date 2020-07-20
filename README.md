@@ -5,7 +5,7 @@ https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
 [![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes controller for a `Foo` resource using [kube-rs](https://github.com/clux/kube-rs/).
+A rust kubernetes controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/).
 
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
@@ -13,7 +13,7 @@ The `Controller` object reconciles `Foo` instances when changes to it are detect
 A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
 
 ```sh
-kubectl apply -f yaml/crd-foo.yaml
+kubectl apply -f yaml/foo-crd.yaml
 
 # then:
 kubectl apply -f yaml/instance-bad.yaml

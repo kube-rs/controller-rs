@@ -3,6 +3,7 @@ VERSION=$(shell git rev-parse HEAD)
 SEMVER_VERSION=$(shell grep version Cargo.toml | awk -F"\"" '{print $$2}' | head -n 1)
 REPO=clux
 SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
 
 run:
 	cargo run
