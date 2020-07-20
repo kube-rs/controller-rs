@@ -5,14 +5,18 @@ https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
 [![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A kubernetes controller for a `Foo` resource using informers in rust.
+A rust kubernetes controller for a `Foo` resource using [kube-rs](https://github.com/clux/kube-rs/).
+
+The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
 A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
 
 ```sh
-kubectl apply -f yaml/examplecrd.yaml
-kubectl apply -f yaml/crd-qux.yaml
+kubectl apply -f yaml/crd-foo.yaml
+
+# then:
+kubectl apply -f yaml/instance-bad.yaml
 ```
 
 ## Running
@@ -23,7 +27,6 @@ You need a valid local kube config with sufficient access (`foobar` service acco
 Start the server with `cargo run`:
 
 ```sh
-export NAMESPACE=default
 cargo run
 ```
 
@@ -40,39 +43,21 @@ kubectl port-forward ${FOO_POD} -n default 8080:8080 # keep this running
 ## Usage
 Once the app is running, you can see that it observes `foo` events.
 
-You can try to remove a `foo`:
+Try some of:
 
 ```sh
-kubectl delete foo qux -n default
+kubectl apply -f yaml/instance-good.yaml -n default
+kubectl delete foo good -n default
+kubectl edit foo good # change info to contain bad
 ```
 
-then the app will soon print:
-
-```
-[2019-04-28T22:03:08Z INFO  controller::state] Deleted Foo: qux
-```
-
-ditto if you try to apply one:
-
-```sh
-kubectl apply -f yaml/crd-baz.yaml -n default
-```
-
-```
-[2019-04-28T22:07:01Z INFO  controller::state] Adding Foo: baz (this is baz)
-```
-
-If you edit, and then apply, baz, you'll get:
-
-```
-[2019-04-28T22:08:21Z INFO  controller::state] Modifyied Foo: baz (edit str)
-```
+The reconciler will run and write the status object on every change. You should see results in the logs of the pod, or on the .status object outputs of `kubectl get foos -oyaml`.
 
 ## Webapp output
 The sample web server exposes some example metrics and debug information you can inspect with `curl`.
 
 ```sh
-$ kubectl apply -f yaml/crd-qux.yaml -n default
+$ kubectl apply -f yaml/instance-good.yaml -n default
 $ curl localhost:8080/metrics
 # HELP handled_events handled events
 # TYPE handled_events counter
@@ -82,6 +67,6 @@ $ curl localhost:8080/
 ```
 
 ## Events
-The event handler in [controller.rs](https://github.com/clux/controller-rs/blob/master/src/state.rs) currently does not mutate anything in kubernetes based on any events here as this is an example.
+The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`.
 
-You can perform arbitrary kube actions using the `client`. See [kube-rs/examples](https://github.com/clux/kube-rs/tree/master/examples) and the api docs for [kube::api::Api](https://clux.github.io/kube-rs/kube/api/struct.Api.html) for ideas.
+While this controller has no child objects configured, there is a `configmapgen_controller` example in [kube-rs](https://github.com/clux/kube-rs/).

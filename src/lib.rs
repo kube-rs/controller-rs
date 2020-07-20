@@ -5,8 +5,25 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate prometheus;
 
-pub type Result<T> = std::result::Result<T, anyhow::Error>;
+use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Foo has bad info: {}", info))]
+    FooIsBad { info: String, backtrace: Backtrace },
+
+    #[snafu(display("Failed to patch Foo: {}", source))]
+    FooPatchFailed {
+        source: kube::Error,
+        backtrace: Backtrace,
+    },
+
+    SerializationFailed {
+        source: serde_json::Error,
+        backtrace: Backtrace,
+    },
+}
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// State machinery for kube, as exposeable to actix
 pub mod state;
-pub use state::Controller;
+pub use state::Manager;

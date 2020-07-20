@@ -1,7 +1,0 @@
-apiVersion: clux.dev/v1
-kind: Foo
-metadata:
-  name: baz
-spec:
-  name: baz
-  info: this is baz
