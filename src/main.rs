@@ -1,8 +1,7 @@
 #![allow(unused_imports, unused_variables)]
 pub use controller::*;
-use log::{debug, error, info, trace, warn};
 use prometheus::{Encoder, TextEncoder};
-use std::env;
+use tracing::{debug, error, info, trace, warn};
 
 use actix_web::{
     get, middleware,
@@ -32,10 +31,9 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "actix_web=info,controller=info,kube=debug");
-    }
-    env_logger::init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
     let client = kube::Client::try_default().await.expect("create client");
     let (manager, drainer) = Manager::new(client);
 

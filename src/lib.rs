@@ -2,7 +2,6 @@
 #![allow(unused_imports)]
 
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate log;
 #[macro_use] extern crate prometheus;
 
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
@@ -25,5 +24,5 @@ pub enum Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// State machinery for kube, as exposeable to actix
-pub mod state;
-pub use state::Manager;
+pub mod manager;
+pub use manager::Manager;

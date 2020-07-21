@@ -7,11 +7,12 @@ use kube::{
 };
 use kube_derive::CustomResource;
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
-use prometheus::{default_registry, proto::MetricFamily, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
+use prometheus::{default_registry, proto::MetricFamily, IntCounter};
 use serde_json::json;
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
+use tracing::{debug, error, info, trace, warn};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
@@ -36,7 +37,7 @@ struct Data {
     /// In memory state
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
-    metrics: Arc<RwLock<Metrics>>,
+    metrics: Metrics,
 }
 
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
@@ -104,7 +105,7 @@ pub struct Manager {
     /// In memory state
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
-    metrics: Arc<RwLock<Metrics>>,
+    metrics: Metrics,
 }
 
 /// Example Manager that owns a Controller for Foo
@@ -114,7 +115,7 @@ impl Manager {
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
     pub fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
-        let metrics = Arc::new(RwLock::new(Metrics::new()));
+        let metrics = Metrics::new();
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
             client: client.clone(),
@@ -127,7 +128,7 @@ impl Manager {
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
             .for_each(|o| {
-                println!("Reconciled {:?}", o);
+                info!("Reconciled {:?}", o);
                 futures::future::ready(())
             })
             .boxed();
