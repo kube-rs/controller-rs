@@ -12,7 +12,7 @@ use serde_json::json;
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn, instrument};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
@@ -40,12 +40,13 @@ struct Data {
     metrics: Metrics,
 }
 
+#[instrument(skip(ctx))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let name = Meta::name(&foo);
     let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    info!("Reconcile Foo {}: {:?}", name, foo);
+    debug!("Reconcile Foo {}: {:?}", name, foo);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = serde_json::to_vec(&json!({
