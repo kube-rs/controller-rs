@@ -60,6 +60,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .await
         .context(FooPatchFailed)?;
 
+    ctx.get_ref().metrics.handled_events.inc();
+
     // If no events were received, check back every 30 minutes
     Ok(ReconcilerAction {
         requeue_after: Some(Duration::from_secs(3600 / 2)),
