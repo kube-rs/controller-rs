@@ -285,6 +285,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee2a4ec343196209d6594e19543ae87a39f96d5534d7174822a3ad825dd6ed7e"
 
 [[package]]
+name = "ahash"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
+dependencies = [
+ "const-random",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -538,6 +547,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-random"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f1af9ac737b2dd2d577701e59fd09ba34822f6f2ebdb30a7647405d9e55e16a"
+dependencies = [
+ "const-random-macro",
+ "proc-macro-hack",
+]
+
+[[package]]
+name = "const-random-macro"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25e4c606eb459dd29f7c57b2e0879f2b6f14ee130918c2b78ccb58a9624e6c7a"
+dependencies = [
+ "getrandom",
+ "proc-macro-hack",
+]
+
+[[package]]
 name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -545,7 +574,7 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "controller"
-version = "0.5.0"
+version = "0.7.0"
 dependencies = [
  "actix-rt",
  "actix-web",
@@ -611,11 +640,13 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
-version = "4.0.0-rc6"
+version = "3.11.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "308a6703be2d759cb5fb7b80a23547fe73a8d5ebf70d3a4ca7f0ef4c0bfc2265"
+checksum = "e2f7a3766904c6f4734f2bbf8a037b6f84753d19fe65f54b0f4d97d8f62187bb"
 dependencies = [
- "once_cell",
+ "ahash",
+ "cfg-if",
+ "num_cpus",
 ]
 
 [[package]]
@@ -1126,9 +1157,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.37.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4aba6e152805ed8d84b66b06e593e8250b135e5f465dfa4961d8365351f91646"
+checksum = "52e912246f0fb21e1728fdd3c1657a6a0db4be100af172df13f19c744c4f1c5f"
 dependencies = [
  "Inflector",
  "base64 0.12.3",
@@ -1156,9 +1187,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.37.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9ee2ff16fb3e1fdbfc876812db3576f0dd06675c3fc9ff7e1775aa26ce5e3fa"
+checksum = "910e1eac18446dfc1f25f22cced97493a6de04f65690e146a53bc2f3c1396cbf"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -1169,9 +1200,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.37.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab31fb26ad9fc67d20bacd5aae6d993fafc2a4aefed74bd88acc512b504bd03"
+checksum = "5834e54969e644bd8e9ba6207f22db38f2bddfe393edc432ecca849247fbd6bd"
 dependencies = [
  "dashmap",
  "derivative",
