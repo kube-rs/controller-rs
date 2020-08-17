@@ -1,9 +1,6 @@
 #![warn(rust_2018_idioms)]
 #![allow(unused_imports)]
 
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate prometheus;
-
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 #[derive(Debug, Snafu)]
 pub enum Error {

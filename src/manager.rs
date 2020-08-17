@@ -1,18 +1,20 @@
 use crate::{Error, FooPatchFailed, Result, SerializationFailed};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
+use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1beta1::CustomResourceDefinition;
 use kube::{
     api::{Api, ListParams, Meta, PatchParams},
     client::Client,
+    CustomResource,
 };
-use kube_derive::CustomResource;
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
-use prometheus::{default_registry, proto::MetricFamily, IntCounter};
+use prometheus::{default_registry, proto::MetricFamily, register_int_counter, IntCounter};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, trace, warn, instrument};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
@@ -117,7 +119,7 @@ impl Manager {
     ///
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
-    pub fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
+    pub async fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
         let metrics = Metrics::new();
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
@@ -125,6 +127,9 @@ impl Manager {
             metrics: metrics.clone(),
             state: state.clone(),
         });
+        let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
+        crds.get("foos.clux.dev").await.expect("install foo crd first");
+
         let foos = Api::<Foo>::all(client);
 
         let drainer = Controller::new(foos, ListParams::default())
