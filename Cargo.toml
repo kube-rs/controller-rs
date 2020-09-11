@@ -14,8 +14,8 @@ name = "controller"
 path = "src/lib.rs"
 
 [dependencies]
-actix-rt = "1.1.0"
-actix-web = "2.0.0"
+actix-rt = "1.1.1"
+actix-web = "3.0.0"
 futures = "0.3.5"
 tokio = { version = "0.2.22", features = ["macros"] }
 prometheus = "0.9.0"
