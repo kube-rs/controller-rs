@@ -18,7 +18,7 @@ use tracing::{debug, error, info, instrument, trace, warn};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
-#[kube(group = "clux.dev", version = "v1", namespaced)]
+#[kube(group = "clux.dev", version = "v1", kind = "Foo", namespaced)]
 #[kube(apiextensions = "v1beta1")]
 #[kube(status = "FooStatus")]
 pub struct FooSpec {

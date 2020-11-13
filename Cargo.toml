@@ -19,8 +19,8 @@ actix-web = "3.0.0"
 futures = "0.3.5"
 tokio = { version = "0.2.22", features = ["macros"] }
 prometheus = "0.10.0"
-kube = { version = "0.42.0", features = ["derive"] }
-kube-runtime = "0.42.0"
+kube = { version = "0.43.0", features = ["derive"] }
+kube-runtime = "0.43.0"
 k8s-openapi = { version = "0.9.0", features = ["v1_18"], default-features=false }
 serde = { version = "1.0.115", features = ["derive"] }
 serde_json = "1.0.57"
