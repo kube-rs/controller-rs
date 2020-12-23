@@ -26,9 +26,10 @@ pub struct FooSpec {
     info: String,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct FooStatus {
     is_bad: bool,
+    //last_updated: Option<DateTime<Utc>>,
 }
 
 // Context for our reconciler
@@ -54,6 +55,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     let new_status = serde_json::to_vec(&json!({
         "status": FooStatus {
             is_bad: foo.spec.info.contains("bad"),
+            //last_updated: Some(Utc::now()),
         }
     }))
     .context(SerializationFailed)?;

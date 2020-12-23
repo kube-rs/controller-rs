@@ -7,7 +7,7 @@ SHELL := /bin/bash
 
 install:
 	cargo run --bin crdgen > yaml/foo-crd.yaml
-	kubectl apply -f foo-crd.yaml
+	kubectl apply -f yaml/foo-crd.yaml
 
 run:
 	cargo run

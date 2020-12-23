@@ -13,6 +13,7 @@ The `Controller` object reconciles `Foo` instances when changes to it are detect
 A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
 
 ```sh
+cargo run --bin crdgen > yaml/foo-crd.yaml
 kubectl apply -f yaml/foo-crd.yaml
 
 # then:
@@ -58,11 +59,11 @@ The sample web server exposes some example metrics and debug information you can
 
 ```sh
 $ kubectl apply -f yaml/instance-good.yaml -n default
-$ curl localhost:8080/metrics
+$ curl 0.0.0.0:8080/metrics
 # HELP handled_events handled events
 # TYPE handled_events counter
 handled_events 1
-$ curl localhost:8080/
+$ curl 0.0.0.0:8080/
 {"last_event":"2019-07-17T22:31:37.591320068Z"}
 ```
 

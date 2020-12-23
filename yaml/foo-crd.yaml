@@ -34,6 +34,10 @@ spec:
               properties:
                 is_bad:
                   type: boolean
+                last_updated:
+                  format: date-time
+                  nullable: true
+                  type: string
               required:
                 - is_bad
               type: object
