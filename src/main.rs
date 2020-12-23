@@ -32,7 +32,7 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 #[actix_rt::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .init();
     let client = kube::Client::try_default().await.expect("create client");
     let (manager, drainer) = Manager::new(client).await;

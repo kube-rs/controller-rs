@@ -5,6 +5,10 @@ REPO=clux
 SHELL := /bin/bash
 .SHELLFLAGS := -euo pipefail -c
 
+install:
+	cargo run --bin crdgen > yaml/foo-crd.yaml
+	kubectl apply -f foo-crd.yaml
+
 run:
 	cargo run
 

@@ -4,9 +4,6 @@
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 #[derive(Debug, Snafu)]
 pub enum Error {
-    #[snafu(display("Foo has bad info: {}", info))]
-    FooIsBad { info: String, backtrace: Backtrace },
-
     #[snafu(display("Failed to patch Foo: {}", source))]
     FooPatchFailed {
         source: kube::Error,
@@ -23,3 +20,6 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// State machinery for kube, as exposeable to actix
 pub mod manager;
 pub use manager::Manager;
+
+/// Generated type, for crdgen
+pub use manager::Foo;

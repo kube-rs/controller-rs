@@ -1,7 +1,7 @@
 use crate::{Error, FooPatchFailed, Result, SerializationFailed};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
-use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1beta1::CustomResourceDefinition;
+use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
     api::{Api, ListParams, Meta, PatchParams},
     client::Client,
@@ -9,6 +9,7 @@ use kube::{
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
 use prometheus::{default_registry, proto::MetricFamily, register_int_counter, IntCounter};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
@@ -17,16 +18,15 @@ use tokio::{sync::RwLock, time::Duration};
 use tracing::{debug, error, info, instrument, trace, warn};
 
 /// Our Foo custom resource spec
-#[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
-#[kube(group = "clux.dev", version = "v1", namespaced)]
-#[kube(apiextensions = "v1beta1")]
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(kind = "Foo", group = "clux.dev", version = "v1", namespaced)]
 #[kube(status = "FooStatus")]
 pub struct FooSpec {
     name: String,
     info: String,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 pub struct FooStatus {
     is_bad: bool,
 }
@@ -57,7 +57,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         }
     }))
     .context(SerializationFailed)?;
-    let ps = PatchParams::default(); //TODO: fix default_apply().force()
+    let ps = PatchParams::default();
     let _o = foos
         .patch_status(&name, &ps, new_status)
         .await
@@ -128,7 +128,9 @@ impl Manager {
             state: state.clone(),
         });
         let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
-        crds.get("foos.clux.dev").await.expect("install foo crd first");
+        crds.get("foos.clux.dev")
+            .await
+            .expect("please run: cargo run --bin crdgen | kubectl apply -f -");
 
         let foos = Api::<Foo>::all(client);
 
