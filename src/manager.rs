@@ -3,7 +3,7 @@ use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
-    api::{Api, ListParams, Meta, PatchParams},
+    api::{Api, ListParams, Meta, Patch, PatchParams},
     client::Client,
     CustomResource,
 };
@@ -52,18 +52,14 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     debug!("Reconcile Foo {}: {:?}", name, foo);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
-    let new_status = serde_json::to_vec(&json!({
+    let new_status = Patch::Apply(json!({
         "status": FooStatus {
             is_bad: foo.spec.info.contains("bad"),
             //last_updated: Some(Utc::now()),
         }
-    }))
-    .context(SerializationFailed)?;
-    let ps = PatchParams::default();
-    let _o = foos
-        .patch_status(&name, &ps, new_status)
-        .await
-        .context(FooPatchFailed)?;
+    }));
+    let ps = PatchParams::apply("cntrlr").force();
+    let _o = foos.patch_status(&name, &ps, &new_status).await.context(FooPatchFailed)?;
 
     ctx.get_ref().metrics.handled_events.inc();
 
