@@ -53,6 +53,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
+        "apiVersion": "clux.dev/v1",
+        "kind": "Foo",
         "status": FooStatus {
             is_bad: foo.spec.info.contains("bad"),
             //last_updated: Some(Utc::now()),

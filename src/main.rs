@@ -26,7 +26,7 @@ async fn health(_: HttpRequest) -> impl Responder {
 #[get("/")]
 async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
     let state = c.state().await;
-    HttpResponse::Ok().json(state)
+    HttpResponse::Ok().json(&state)
 }
 
 #[actix_rt::main]
