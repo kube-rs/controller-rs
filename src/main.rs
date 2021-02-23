@@ -35,7 +35,6 @@ async fn main() -> Result<()> {
         .with_max_level(tracing::Level::INFO)
         .json()
         .init();
-    // TODO: tracing with json logs
     let client = kube::Client::try_default().await.expect("create client");
     let (manager, drainer) = Manager::new(client).await;
 
