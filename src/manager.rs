@@ -1,7 +1,6 @@
 use crate::{Error, FooPatchFailed, Result, SerializationFailed};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
-use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
     api::{Api, ListParams, Meta, Patch, PatchParams},
     client::Client,
@@ -127,12 +126,9 @@ impl Manager {
             metrics: metrics.clone(),
             state: state.clone(),
         });
-        let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
-        crds.get("foos.clux.dev")
-            .await
-            .expect("please run: cargo run --bin crdgen | kubectl apply -f -");
 
         let foos = Api::<Foo>::all(client);
+        //foos.get("testfoo").await.expect("please run: cargo run --bin crdgen | kubectl apply -f -");
 
         let drainer = Controller::new(foos, ListParams::default())
             .run(reconcile, error_policy, context)
