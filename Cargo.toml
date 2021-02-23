@@ -34,7 +34,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 color-eyre = "0.5.10"
 snafu = "0.6.10"
 tracing = "0.1.23"
-tracing-subscriber = "0.2.15"
+tracing-subscriber = { version = "0.2.15", features = ["json"] }
 tracing-futures = "0.2.4"
 schemars = { version = "0.8.0", features = ["chrono"] }
 serde_yaml = "0.8.17"
