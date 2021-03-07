@@ -31,13 +31,9 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .json()
-        .init();
     let client = kube::Client::try_default().await.expect("create client");
     let (manager, drainer) = Manager::new(client).await;
-
+    telemetry::init().expect("init telemetry");
     let server = HttpServer::new(move || {
         App::new()
             .data(manager.clone())

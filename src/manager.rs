@@ -1,4 +1,4 @@
-use crate::{Error, FooPatchFailed, Result, SerializationFailed};
+use crate::{Error, Result, telemetry};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
@@ -11,10 +11,9 @@ use prometheus::{default_registry, proto::MetricFamily, register_int_counter, In
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn, event, Level};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -44,11 +43,13 @@ struct Data {
 
 #[instrument(skip(ctx))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
+    let tid = telemetry::get_trace_id();
+
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let name = Meta::name(&foo);
     let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    debug!("Reconcile Foo {}: {:?}", name, foo);
+    info!("Reconcile {} traceId={}", name, tid);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -60,7 +61,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
-    let _o = foos.patch_status(&name, &ps, &new_status).await.context(FooPatchFailed)?;
+    let _o = foos.patch_status(&name, &ps, &new_status).await.map_err(Error::KubeError)?;
 
     ctx.get_ref().metrics.handled_events.inc();
 
@@ -70,7 +71,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     })
 }
 fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
-    warn!("reconcile failed: {}", error);
+    warn!("reconcile failed: {:?}", error);
     ReconcilerAction {
         requeue_after: Some(Duration::from_secs(360)),
     }
