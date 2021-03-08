@@ -9,8 +9,11 @@ install:
 	cargo run --bin crdgen > yaml/foo-crd.yaml
 	kubectl apply -f yaml/foo-crd.yaml
 
+forward-tempo:
+	kubectl port-forward -n monitoring service/grafana-agent-traces 55680:55680
+
 run:
-	cargo run
+	OPENTELEMETRY_ENDPOINT_URL=http://0.0.0.0:55680 RUST_LOG=trace,hyper=info,tower=info cargo run
 
 compile:
 	docker run --rm \

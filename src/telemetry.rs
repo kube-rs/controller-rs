@@ -10,8 +10,6 @@ pub fn init() -> std::result::Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("http://0.0.0.0:55680".to_string());
 
     let (tracer, _uninstall) = opentelemetry_otlp::new_pipeline()
-        // NB: need to port-forward the service
-        // k port-forward -n monitoring service/grafana-agent-traces 55680:55680
         .with_endpoint(&otlp_endpoint)
         .install()?;
 
@@ -37,7 +35,7 @@ pub fn init() -> std::result::Result<(), Box<dyn std::error::Error>> {
 // ideally it would be exposed by tracing::Span
 pub fn get_trace_id() -> String {
     use opentelemetry::trace::{SpanContext, TraceContextExt, Tracer};
-    opentelemetry::global::tracer("registry").in_span("reconcile", |cx| {
+    opentelemetry::global::tracer("controller").in_span("reconcile", |cx| {
         cx.span().span_context().trace_id().to_hex()
     })
 }
