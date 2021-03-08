@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, instrument, trace, warn, event, Level};
+use tracing::{debug, error, info, instrument, trace, warn, event, Level, field, Span};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -41,15 +41,15 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), fields(traceId))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
-    let tid = telemetry::get_trace_id();
+    Span::current().record("traceId", &field::display(&telemetry::get_trace_id()));
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let name = Meta::name(&foo);
     let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    info!("Reconcile {} traceId={}", name, tid);
+    info!("Reconcile {}", name);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
