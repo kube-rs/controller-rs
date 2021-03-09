@@ -41,7 +41,7 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(traceID, name = "reconcile"))]
+#[instrument(skip(ctx), fields(traceID))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     Span::current().record("traceID", &field::display(&telemetry::get_trace_id()));
 
@@ -49,7 +49,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let name = Meta::name(&foo);
     let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    info!("Reconcile {}", name);
+    info!("Reconciling Foo \"{}\"", name);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -119,7 +119,8 @@ impl Manager {
     ///
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
-    pub async fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
+    pub async fn new() -> (Self, BoxFuture<'static, ()>) {
+        let client = Client::try_default().await.expect("create client");
         let metrics = Metrics::new();
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
