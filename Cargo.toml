@@ -15,11 +15,6 @@ doc = false
 name = "crdgen"
 path = "src/crdgen.rs"
 
-[[bin]]
-doc = false
-name = "blah"
-path = "blah.rs"
-
 [lib]
 name = "controller"
 path = "src/lib.rs"
@@ -50,5 +45,5 @@ opentelemetry-otlp = { version = "0.5.0", features = ["tokio", "grpc-sys", "open
 # local dev
 #kube = { path = "../kube-rs/kube", features = ["derive"] }
 #kube-runtime = { path = "../kube-rs/kube-runtime" }
-kube = { git = "https://github.com/clux/kube-rs.git", branch = "tracing-test", features = ["derive"] }
-kube-runtime = { git = "https://github.com/clux/kube-rs.git", branch = "tracing-test" }
+kube = { git = "https://github.com/clux/kube-rs.git", rev = "70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522", features = ["derive"] }
+kube-runtime = { git = "https://github.com/clux/kube-rs.git", rev = "70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522" }

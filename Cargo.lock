@@ -1149,7 +1149,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.51.0"
-source = "git+https://github.com/clux/kube-rs.git?branch=tracing-test#6544c829009d046f3fd633557f04d28f49042cd7"
+source = "git+https://github.com/clux/kube-rs.git?rev=70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522#70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522"
 dependencies = [
  "Inflector",
  "base64",
@@ -1185,7 +1185,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.51.0"
-source = "git+https://github.com/clux/kube-rs.git?branch=tracing-test#6544c829009d046f3fd633557f04d28f49042cd7"
+source = "git+https://github.com/clux/kube-rs.git?rev=70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522#70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522"
 dependencies = [
  "Inflector",
  "darling",
@@ -1198,7 +1198,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.51.0"
-source = "git+https://github.com/clux/kube-rs.git?branch=tracing-test#6544c829009d046f3fd633557f04d28f49042cd7"
+source = "git+https://github.com/clux/kube-rs.git?rev=70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522#70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522"
 dependencies = [
  "dashmap",
  "derivative",
