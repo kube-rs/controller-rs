@@ -91,6 +91,9 @@ spec:
         - name: http
           containerPort: 8080
           protocol: TCP
+        env:
+        - name: OPENTELEMETRY_ENDPOINT_URL
+          value: "grafana-agent-traces.monitoring.svc.cluster.local:55680"
         readinessProbe:
           httpGet:
             path: /health

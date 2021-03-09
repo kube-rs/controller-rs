@@ -41,9 +41,9 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(traceId))]
+#[instrument(skip(ctx), fields(traceID, name = "reconcile"))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
-    Span::current().record("traceId", &field::display(&telemetry::get_trace_id()));
+    Span::current().record("traceID", &field::display(&telemetry::get_trace_id()));
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
