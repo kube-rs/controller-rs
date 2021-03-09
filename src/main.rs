@@ -2,9 +2,7 @@
 pub use controller::*;
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
-use tracing_subscriber::prelude::*;
-use tracing_subscriber::{fmt, EnvFilter};
-use tracing_subscriber::{Registry, fmt::format::FmtSpan};
+use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
 use actix_web::{
     get, middleware,
@@ -43,7 +41,7 @@ async fn main() -> Result<()> {
 
     // Finish layers
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    let logger = tracing_subscriber::fmt::layer();
+    let logger = tracing_subscriber::fmt::layer().json();
 
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info")).unwrap();
