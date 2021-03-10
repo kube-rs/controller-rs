@@ -41,7 +41,7 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(traceID))]
+#[instrument(skip(ctx), fields(traceID, service.name = "foo-controller"))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     Span::current().record("traceID", &field::display(&telemetry::get_trace_id()));
 
@@ -49,7 +49,6 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let name = Meta::name(&foo);
     let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    info!("Reconciling Foo \"{}\"", name);
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -64,6 +63,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     let _o = foos.patch_status(&name, &ps, &new_status).await.map_err(Error::KubeError)?;
 
     ctx.get_ref().metrics.handled_events.inc();
+    info!("Reconciled Foo \"{}\" in {}", name, ns);
 
     // If no events were received, check back every 30 minutes
     Ok(ReconcilerAction {
@@ -135,10 +135,7 @@ impl Manager {
         let drainer = Controller::new(foos, ListParams::default())
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
-            .for_each(|o| {
-                info!("Reconciled {:?}", o);
-                futures::future::ready(())
-            })
+            .for_each(|_| futures::future::ready(()))
             .boxed();
         // what we do with the controller stream from .run() ^^ does not matter
         // but we do need to consume it, hence general printing + return future
