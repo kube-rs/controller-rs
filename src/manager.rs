@@ -1,4 +1,4 @@
-use crate::{Error, Result, telemetry};
+use crate::{telemetry, Error, Result};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, instrument, trace, warn, event, Level, field, Span};
+use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, Span};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -41,7 +41,7 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(traceID, service.name = "foo-controller"))]
+#[instrument(skip(ctx), fields(traceID))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     Span::current().record("traceID", &field::display(&telemetry::get_trace_id()));
 
@@ -60,7 +60,10 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
-    let _o = foos.patch_status(&name, &ps, &new_status).await.map_err(Error::KubeError)?;
+    let _o = foos
+        .patch_status(&name, &ps, &new_status)
+        .await
+        .map_err(Error::KubeError)?;
 
     ctx.get_ref().metrics.handled_events.inc();
     info!("Reconciled Foo \"{}\" in {}", name, ns);

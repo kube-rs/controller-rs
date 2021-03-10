@@ -2,7 +2,7 @@
 pub use controller::*;
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
-use tracing_subscriber::{EnvFilter, Registry, prelude::*};
+use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 use actix_web::{
     get, middleware,
@@ -32,19 +32,27 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    let otlp_endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL")
-        .expect("Need a otel tracing collector configured");
+    let otlp_endpoint =
+        std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
 
     let (tracer, _uninstall) = opentelemetry_otlp::new_pipeline()
         .with_endpoint(&otlp_endpoint)
-        .install().unwrap();
+        .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
+            opentelemetry::sdk::Resource::new(vec![opentelemetry::KeyValue::new(
+                "service.name",
+                "foo-controller",
+            )]),
+        ))
+        .install()
+        .unwrap();
 
     // Finish layers
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
     let logger = tracing_subscriber::fmt::layer().json();
 
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info")).unwrap();
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
 
     // Register all subscribers
     let collector = Registry::default()
