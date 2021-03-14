@@ -7,12 +7,18 @@ use kube::{
     CustomResource,
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
-use prometheus::{default_registry, proto::MetricFamily, register_int_counter, IntCounter};
+use prometheus::{
+    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, Exemplar,
+    HistogramOpts, HistogramVec, IntCounter,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::Arc;
-use tokio::{sync::RwLock, time::Duration};
+use std::{collections::HashMap, sync::Arc};
+use tokio::{
+    sync::RwLock,
+    time::{Duration, Instant},
+};
 use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, Span};
 
 /// Our Foo custom resource spec
@@ -43,7 +49,9 @@ struct Data {
 
 #[instrument(skip(ctx), fields(traceID))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
-    Span::current().record("traceID", &field::display(&telemetry::get_trace_id()));
+    let trace_id = telemetry::get_trace_id();
+    Span::current().record("traceID", &field::display(&trace_id));
+    let start = Instant::now();
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
@@ -65,6 +73,16 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .await
         .map_err(Error::KubeError)?;
 
+    let duration = duration_to_seconds(start.elapsed());
+
+    let mut exemplar_labels = HashMap::new();
+    exemplar_labels.insert("traceID".into(), trace_id);
+    let ex = Exemplar::new_with_labels(duration, exemplar_labels);
+    ctx.get_ref()
+        .metrics
+        .reconcile_duration
+        .with_label_values(&[])
+        .observe_with_exemplar(duration, ex);
     ctx.get_ref().metrics.handled_events.inc();
     info!("Reconciled Foo \"{}\" in {}", name, ns);
 
@@ -84,11 +102,21 @@ fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
 #[derive(Clone)]
 pub struct Metrics {
     pub handled_events: IntCounter,
+    pub reconcile_duration: HistogramVec,
 }
 impl Metrics {
     fn new() -> Self {
+        let reconcile_histogram = register_histogram_vec!(
+            "foo_controller_reconcile_duration_seconds",
+            "The duration of reconcile to complete in seconds",
+            &[],
+            vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]
+        )
+        .unwrap();
+
         Metrics {
-            handled_events: register_int_counter!("handled_events", "handled events").unwrap(),
+            handled_events: register_int_counter!("foo_controller_handled_events", "handled events").unwrap(),
+            reconcile_duration: reconcile_histogram,
         }
     }
 }
@@ -155,4 +183,11 @@ impl Manager {
     pub async fn state(&self) -> State {
         self.state.read().await.clone()
     }
+}
+
+/// Convert `Duration` to seconds for `Histogram`s
+#[inline]
+pub fn duration_to_seconds(d: std::time::Duration) -> f64 {
+    let nanos = f64::from(d.subsec_nanos()) / 1e9;
+    d.as_secs() as f64 + nanos
 }
