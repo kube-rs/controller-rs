@@ -43,9 +43,9 @@ opentelemetry-otlp = { version = "0.5.0", features = ["tokio", "grpc-sys", "open
 #opentelemetry-otlp = { version = "0.5.0", features = ["tokio", "async"] }
 
 # local dev
-#kube = { path = "../kube-rs/kube", features = ["derive"] }
-#kube-runtime = { path = "../kube-rs/kube-runtime" }
-kube = { git = "https://github.com/clux/kube-rs.git", rev = "70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522", features = ["derive"] }
-kube-runtime = { git = "https://github.com/clux/kube-rs.git", rev = "70a7ce1ec4ff2aeefe5a277cfd45ea0654c92522" }
-prometheus = { git = "https://github.com/clux/rust-prometheus.git", branch = "master" }
-#prometheus = { path = "../rust-prometheus" }
+kube = { path = "../kube-rs/kube", features = ["derive"] }
+kube-runtime = { path = "../kube-rs/kube-runtime" }
+#kube = { git = "https://github.com/clux/kube-rs.git", rev = "698f421652032aec5302eefa1593a4bee0d28b77", features = ["derive"] }
+#kube-runtime = { git = "https://github.com/clux/kube-rs.git", rev = "698f421652032aec5302eefa1593a4bee0d28b77" }
+#prometheus = { git = "https://github.com/clux/rust-prometheus.git", branch = "master" }
+prometheus = { path = "../rust-prometheus" }

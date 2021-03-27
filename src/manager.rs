@@ -78,6 +78,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     let mut exemplar_labels = HashMap::new();
     exemplar_labels.insert("traceID".into(), trace_id);
     let ex = Exemplar::new_with_labels(duration, exemplar_labels);
+    println!("exemplar: {:?}", ex);
     ctx.get_ref()
         .metrics
         .reconcile_duration
@@ -161,15 +162,17 @@ impl Manager {
         });
 
         let foos = Api::<Foo>::all(client);
-        //foos.get("testfoo").await.expect("please run: cargo run --bin crdgen | kubectl apply -f -");
+        // Ensure CRD is installed before loop-watching
+        let _r = foos.list(&ListParams::default().limit(1))
+            .await
+            .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
+        // All good. Start controller and return its future.
         let drainer = Controller::new(foos, ListParams::default())
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
             .for_each(|_| futures::future::ready(()))
             .boxed();
-        // what we do with the controller stream from .run() ^^ does not matter
-        // but we do need to consume it, hence general printing + return future
 
         (Self { state, metrics }, drainer)
     }
