@@ -2,6 +2,7 @@
 pub use controller::*;
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
+use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 use actix_web::{
     get, middleware,
@@ -31,13 +32,41 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .json()
-        .init();
-    let client = kube::Client::try_default().await.expect("create client");
-    let (manager, drainer) = Manager::new(client).await;
+    let otlp_endpoint =
+        std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
 
+    let (tracer, _uninstall) = opentelemetry_otlp::new_pipeline()
+        .with_endpoint(&otlp_endpoint)
+        // TODO: opentelemetry_otlp::new_pipeline().with_tonic().install_batch() in 0.6
+        .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
+            opentelemetry::sdk::Resource::new(vec![opentelemetry::KeyValue::new(
+                "service.name",
+                "foo-controller",
+            )]),
+        ))
+        .install()
+        .unwrap();
+
+    // Finish layers
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let logger = tracing_subscriber::fmt::layer().json();
+
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    // Register all subscribers
+    let collector = Registry::default()
+        .with(telemetry)
+        .with(logger)
+        .with(filter_layer);
+
+    tracing::subscriber::set_global_default(collector).unwrap();
+
+    // Start kubernetes controller
+    let (manager, drainer) = Manager::new().await;
+
+    // Start web server
     let server = HttpServer::new(move || {
         App::new()
             .data(manager.clone())

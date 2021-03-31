@@ -9,8 +9,11 @@ install:
 	cargo run --bin crdgen > yaml/foo-crd.yaml
 	kubectl apply -f yaml/foo-crd.yaml
 
+forward-tempo:
+	kubectl port-forward -n monitoring service/grafana-agent-traces 55680:55680
+
 run:
-	cargo run
+	OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run
 
 compile:
 	docker run --rm \
@@ -23,8 +26,6 @@ compile:
 	mv target/x86_64-unknown-linux-musl/release/controller .
 
 build:
-	@echo "Reusing built binary in current directory from make compile"
-	@ls -lah ./controller
 	docker build -t $(REPO)/$(NAME):$(VERSION) .
 
 tag-latest: build
@@ -39,3 +40,11 @@ tag-semver: build
 		docker tag $(REPO)/$(NAME):$(VERSION) $(REPO)/$(NAME):$(SEMVER_VERSION) ; \
 		docker push $(REPO)/$(NAME):$(SEMVER_VERSION) ; \
 	fi
+
+# Helpers for debugging with tempo as an otel collector
+forward-tempo-metrics:
+	kubectl port-forward -n monitoring service/grafana-agent-traces 8080:8080
+check-tempo-metrics:
+	curl http://0.0.0.0:8080/metrics -s |grep -E "^tempo_receiver_accepted_span"
+	# can verify that spans are received from metrics on the grafana-agent-traces
+    # tempo_receiver_accepted_spans{receiver="otlp",tempo_config="default",transport="grpc"} 4

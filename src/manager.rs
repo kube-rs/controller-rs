@@ -1,20 +1,25 @@
-use crate::{Error, FooPatchFailed, Result, SerializationFailed};
+use crate::{telemetry, Error, Result};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
-    api::{Api, ListParams, Meta, Patch, PatchParams},
+    api::{Api, ListParams, Patch, PatchParams, Resource},
     client::Client,
     CustomResource,
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
-use prometheus::{default_registry, proto::MetricFamily, register_int_counter, IntCounter};
+use prometheus::{
+    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, Exemplar,
+    HistogramOpts, HistogramVec, IntCounter,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
-use std::sync::Arc;
-use tokio::{sync::RwLock, time::Duration};
-use tracing::{debug, error, info, instrument, trace, warn};
+use std::{collections::HashMap, sync::Arc};
+use tokio::{
+    sync::RwLock,
+    time::{Duration, Instant},
+};
+use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, Span};
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -42,13 +47,16 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), fields(traceID))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
+    let trace_id = telemetry::get_trace_id();
+    Span::current().record("traceID", &field::display(&trace_id));
+    let start = Instant::now();
+
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
-    let name = Meta::name(&foo);
-    let ns = Meta::namespace(&foo).expect("foo is namespaced");
-    debug!("Reconcile Foo {}: {:?}", name, foo);
+    let name = Resource::name(&foo);
+    let ns = Resource::namespace(&foo).expect("foo is namespaced");
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -60,9 +68,25 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
-    let _o = foos.patch_status(&name, &ps, &new_status).await.context(FooPatchFailed)?;
+    let _o = foos
+        .patch_status(&name, &ps, &new_status)
+        .await
+        .map_err(Error::KubeError)?;
 
+    let duration = start.elapsed().as_millis() as f64;
+    println!("duration= {}", duration);
+
+    let mut exemplar_labels = HashMap::new();
+    exemplar_labels.insert("traceID".into(), trace_id);
+    let ex = Exemplar::new_with_labels(duration, exemplar_labels);
+    println!("exemplar: {:?}", ex);
+    ctx.get_ref()
+        .metrics
+        .reconcile_duration
+        .with_label_values(&[])
+        .observe_with_exemplar(duration, ex);
     ctx.get_ref().metrics.handled_events.inc();
+    info!("Reconciled Foo \"{}\" in {}", name, ns);
 
     // If no events were received, check back every 30 minutes
     Ok(ReconcilerAction {
@@ -70,7 +94,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     })
 }
 fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
-    warn!("reconcile failed: {}", error);
+    warn!("reconcile failed: {:?}", error);
     ReconcilerAction {
         requeue_after: Some(Duration::from_secs(360)),
     }
@@ -80,11 +104,21 @@ fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
 #[derive(Clone)]
 pub struct Metrics {
     pub handled_events: IntCounter,
+    pub reconcile_duration: HistogramVec,
 }
 impl Metrics {
     fn new() -> Self {
+        let reconcile_histogram = register_histogram_vec!(
+            "foo_controller_reconcile_duration_seconds",
+            "The duration of reconcile to complete in seconds",
+            &[],
+            vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]
+        )
+        .unwrap();
+
         Metrics {
-            handled_events: register_int_counter!("handled_events", "handled events").unwrap(),
+            handled_events: register_int_counter!("foo_controller_handled_events", "handled events").unwrap(),
+            reconcile_duration: reconcile_histogram,
         }
     }
 }
@@ -118,7 +152,8 @@ impl Manager {
     ///
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
-    pub async fn new(client: Client) -> (Self, BoxFuture<'static, ()>) {
+    pub async fn new() -> (Self, BoxFuture<'static, ()>) {
+        let client = Client::try_default().await.expect("create client");
         let metrics = Metrics::new();
         let state = Arc::new(RwLock::new(State::new()));
         let context = Context::new(Data {
@@ -128,18 +163,17 @@ impl Manager {
         });
 
         let foos = Api::<Foo>::all(client);
-        //foos.get("testfoo").await.expect("please run: cargo run --bin crdgen | kubectl apply -f -");
+        // Ensure CRD is installed before loop-watching
+        let _r = foos.list(&ListParams::default().limit(1))
+            .await
+            .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
+        // All good. Start controller and return its future.
         let drainer = Controller::new(foos, ListParams::default())
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
-            .for_each(|o| {
-                info!("Reconciled {:?}", o);
-                futures::future::ready(())
-            })
+            .for_each(|_| futures::future::ready(()))
             .boxed();
-        // what we do with the controller stream from .run() ^^ does not matter
-        // but we do need to consume it, hence general printing + return future
 
         (Self { state, metrics }, drainer)
     }
