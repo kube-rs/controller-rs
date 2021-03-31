@@ -2,7 +2,7 @@ use crate::{telemetry, Error, Result};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
-    api::{Api, ListParams, Meta, Patch, PatchParams},
+    api::{Api, ListParams, Patch, PatchParams, Resource},
     client::Client,
     CustomResource,
 };
@@ -55,8 +55,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
-    let name = Meta::name(&foo);
-    let ns = Meta::namespace(&foo).expect("foo is namespaced");
+    let name = Resource::name(&foo);
+    let ns = Resource::namespace(&foo).expect("foo is namespaced");
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -73,7 +73,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .await
         .map_err(Error::KubeError)?;
 
-    let duration = duration_to_seconds(start.elapsed());
+    let duration = start.elapsed().as_millis() as f64;
+    println!("duration= {}", duration);
 
     let mut exemplar_labels = HashMap::new();
     exemplar_labels.insert("traceID".into(), trace_id);
@@ -186,11 +187,4 @@ impl Manager {
     pub async fn state(&self) -> State {
         self.state.read().await.clone()
     }
-}
-
-/// Convert `Duration` to seconds for `Histogram`s
-#[inline]
-pub fn duration_to_seconds(d: std::time::Duration) -> f64 {
-    let nanos = f64::from(d.subsec_nanos()) / 1e9;
-    d.as_secs() as f64 + nanos
 }

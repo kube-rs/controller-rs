@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
 
     let (tracer, _uninstall) = opentelemetry_otlp::new_pipeline()
         .with_endpoint(&otlp_endpoint)
+        // TODO: opentelemetry_otlp::new_pipeline().with_tonic().install_batch() in 0.6
         .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
             opentelemetry::sdk::Resource::new(vec![opentelemetry::KeyValue::new(
                 "service.name",
