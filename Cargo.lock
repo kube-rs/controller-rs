@@ -431,7 +431,7 @@ checksum = "28b9d6de7f49e22cf97ad17fc4036ece69300032f45f78f30b4a4482cdc3f4a6"
 
 [[package]]
 name = "controller"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "actix-rt",
  "actix-web",
@@ -1489,7 +1489,7 @@ dependencies = [
 [[package]]
 name = "prometheus"
 version = "0.12.0"
-source = "git+https://github.com/clux/rust-prometheus.git?rev=b4c6bc3fb0f5605beb65a650657839f0698c3733#b4c6bc3fb0f5605beb65a650657839f0698c3733"
+source = "git+https://github.com/clux/rust-prometheus.git?rev=20450caeffe86085fc17d828243bf19e8c1b0a97#20450caeffe86085fc17d828243bf19e8c1b0a97"
 dependencies = [
  "cfg-if",
  "fnv",

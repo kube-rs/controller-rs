@@ -47,10 +47,10 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(traceID))]
+#[instrument(skip(ctx), fields(trace_id))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     let trace_id = telemetry::get_trace_id();
-    Span::current().record("traceID", &field::display(&trace_id));
+    Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
 
     let client = ctx.get_ref().client.clone();
@@ -76,7 +76,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     let duration = start.elapsed().as_millis() as f64;
 
     let mut exemplar_labels = HashMap::new();
-    exemplar_labels.insert("traceID".into(), trace_id);
+    exemplar_labels.insert("trace_id".into(), trace_id);
     let ex = Exemplar::new_with_labels(duration, exemplar_labels);
     ctx.get_ref()
         .metrics
