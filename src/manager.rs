@@ -74,12 +74,10 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .map_err(Error::KubeError)?;
 
     let duration = start.elapsed().as_millis() as f64;
-    println!("duration= {}", duration);
 
     let mut exemplar_labels = HashMap::new();
     exemplar_labels.insert("traceID".into(), trace_id);
     let ex = Exemplar::new_with_labels(duration, exemplar_labels);
-    println!("exemplar: {:?}", ex);
     ctx.get_ref()
         .metrics
         .reconcile_duration
