@@ -7,6 +7,7 @@ use kube::{
     CustomResource,
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
+use maplit::hashmap;
 use prometheus::{
     default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, Exemplar,
     HistogramOpts, HistogramVec, IntCounter,
@@ -50,7 +51,7 @@ struct Data {
 #[instrument(skip(ctx), fields(trace_id))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     let trace_id = telemetry::get_trace_id();
-    Span::current().record("trace_id", &field::display(&trace_id));
+    Span::current().record("traceId", &field::display(&trace_id));
     let start = Instant::now();
 
     let client = ctx.get_ref().client.clone();
@@ -73,11 +74,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .await
         .map_err(Error::KubeError)?;
 
-    let duration = start.elapsed().as_millis() as f64;
-
-    let mut exemplar_labels = HashMap::new();
-    exemplar_labels.insert("trace_id".into(), trace_id);
-    let ex = Exemplar::new_with_labels(duration, exemplar_labels);
+    let duration = start.elapsed().as_millis() as f64 / 1000.0;
+    let ex = Exemplar::new_with_labels(duration, hashmap! {"trace_id".to_string() => trace_id});
     ctx.get_ref()
         .metrics
         .reconcile_duration
@@ -162,7 +160,8 @@ impl Manager {
 
         let foos = Api::<Foo>::all(client);
         // Ensure CRD is installed before loop-watching
-        let _r = foos.list(&ListParams::default().limit(1))
+        let _r = foos
+            .list(&ListParams::default().limit(1))
             .await
             .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
