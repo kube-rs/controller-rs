@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.9.1"
+version = "0.9.3"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 default-run = "controller"
@@ -41,7 +41,7 @@ opentelemetry = { version = "0.13.0", features = ["trace", "rt-tokio"] }
 opentelemetry-otlp = { version = "0.6.0", features = ["tokio"] }
 
 # exemplar support
-prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "20450caeffe86085fc17d828243bf19e8c1b0a97" }
+prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "9ee975d7a4c563dc9499a33c9c4044e758082c11" }
 
 # local dev
 #kube = { path = "../kube-rs/kube", features = ["derive"] }
