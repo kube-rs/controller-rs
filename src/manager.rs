@@ -2,14 +2,15 @@ use crate::{telemetry, Error, Result};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
-    api::{Api, ListParams, Patch, PatchParams, Resource},
+    api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     CustomResource,
+    Resource
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
 use maplit::hashmap;
 use prometheus::{
-    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, Exemplar,
+    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter,
     HistogramOpts, HistogramVec, IntCounter,
 };
 use schemars::JsonSchema;
@@ -51,13 +52,13 @@ struct Data {
 #[instrument(skip(ctx), fields(trace_id))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     let trace_id = telemetry::get_trace_id();
-    Span::current().record("traceId", &field::display(&trace_id));
+    Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
-    let name = Resource::name(&foo);
-    let ns = Resource::namespace(&foo).expect("foo is namespaced");
+    let name = ResourceExt::name(&foo);
+    let ns = ResourceExt::namespace(&foo).expect("foo is namespaced");
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
@@ -75,12 +76,13 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .map_err(Error::KubeError)?;
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
-    let ex = Exemplar::new_with_labels(duration, hashmap! {"trace_id".to_string() => trace_id});
+    //let ex = Exemplar::new_with_labels(duration, hashmap! {"trace_id".to_string() => trace_id});
     ctx.get_ref()
         .metrics
         .reconcile_duration
         .with_label_values(&[])
-        .observe_with_exemplar(duration, ex);
+        .observe(duration);
+        //.observe_with_exemplar(duration, ex);
     ctx.get_ref().metrics.handled_events.inc();
     info!("Reconciled Foo \"{}\" in {}", name, ns);
 
