@@ -78,7 +78,7 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:demo-otel"
+        image: "clux/controller:0.9.5"
         imagePullPolicy: Always
         resources:
           limits:

@@ -5,12 +5,18 @@ https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
 [![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/).
+A rust kubernetes controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/), sending traces to a local opentelemetry collector.
 
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
-A kube cluster / minikube. Install the CRD and an instance of it into the cluster:
+- A kube cluster / minikube / k3d.
+- An opentelemetry collector running and its adress available on `OPENTELEMETRY_ENDPOINT_URL`
+- The CRD installed
+
+
+### CRD
+Install the CRD and an instance of it into the cluster:
 
 ```sh
 cargo run --bin crdgen > yaml/foo-crd.yaml
@@ -20,15 +26,22 @@ kubectl apply -f yaml/foo-crd.yaml
 kubectl apply -f yaml/instance-bad.yaml
 ```
 
-## Running
+### Opentelemetry
+You need an opentelemetry collector configured. Anything should work, but you might need to change the exporter in `main.rs` if it's not grpc otel.
+
+If you have a running [Tempo](https://grafana.com/oss/tempo/) agent, you can simply:
+
+```
+make forward-tempo &
+```
 
 ### Local Config
 You need a valid local kube config with sufficient access (`clux` service account has sufficient access if you want to [impersonate](https://clux.github.io/probes/post/2019-03-31-impersonating-kube-accounts/) the one in `yaml/access.yaml`).
 
-Start the server with `cargo run`:
+If using
 
 ```sh
-cargo run
+make run
 ```
 
 ### In-cluster Config
