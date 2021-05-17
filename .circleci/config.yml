@@ -33,7 +33,7 @@ jobs:
       - restore_cache:
           keys:
           - target.release-{{ .Environment.CACHE_VERSION }}
-      - run: cargo build --release
+      - run: cargo build --release --all-features
       - save_cache:
           key: target.release-{{ .Environment.CACHE_VERSION }}
           paths:
@@ -59,7 +59,7 @@ jobs:
       - restore_cache:
           keys:
           - target.debug-{{ .Environment.CACHE_VERSION }}
-      - run: cargo test
+      - run: cargo test --all-features
       - run: cargo doc --no-deps
       - save_cache:
           key: target.debug-{{ .Environment.CACHE_VERSION }}
