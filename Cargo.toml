@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.9.5"
+version = "0.10.0"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 default-run = "controller"
@@ -18,6 +18,10 @@ path = "src/crdgen.rs"
 [lib]
 name = "controller"
 path = "src/lib.rs"
+
+[features]
+default = []
+telemetry = []
 
 [dependencies]
 actix-rt = "2.1.0"

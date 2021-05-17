@@ -11,8 +11,8 @@ The `Controller` object reconciles `Foo` instances when changes to it are detect
 
 ## Requirements
 - A kube cluster / minikube / k3d.
-- An opentelemetry collector running and its adress available on `OPENTELEMETRY_ENDPOINT_URL`
 - The CRD installed
+- Opentelemetry collector (optional when building locally)
 
 
 ### CRD
@@ -27,31 +27,29 @@ kubectl apply -f yaml/instance-bad.yaml
 ```
 
 ### Opentelemetry
-You need an opentelemetry collector configured. Anything should work, but you might need to change the exporter in `main.rs` if it's not grpc otel.
+When using the `telemetry` feature, you need an opentelemetry collector configured. Anything should work, but you might need to change the exporter in `main.rs` if it's not grpc otel.
 
 If you have a running [Tempo](https://grafana.com/oss/tempo/) agent, you can simply:
 
 ```
 make forward-tempo &
-```
-
-### Local Config
-You need a valid local kube config with sufficient access (`clux` service account has sufficient access if you want to [impersonate](https://clux.github.io/probes/post/2019-03-31-impersonating-kube-accounts/) the one in `yaml/access.yaml`).
-
-If using
-
-```sh
 make run
 ```
 
+Otherwise, run without the `telemetry` feature via: `cargo run`.
+
+### Local Config
+You need a valid local kube config with rbac privilages described in the [deployment.yaml](./yaml/deployment.yaml).
+
+
 ### In-cluster Config
-Deploy as a deployment with scoped access via a service account. See `yaml/deployment.yaml` as an example.
+Deploy as a deployment with scoped access via a service account. See `yaml/deployment.yaml` as an example. Note that the image on dockerhub is built with the `telemetry` feature.
 
 ```sh
 kubectl apply -f yaml/deployment.yaml
 sleep 10 # wait for docker pull and start on kube side
 export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers | awk '{print $1}')"
-kubectl port-forward ${FOO_POD} -n default 8080:8080 # keep this running
+kubectl port-forward ${FOO_POD} -n default 8080:8080 &
 ```
 
 ## Usage

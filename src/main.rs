@@ -32,9 +32,11 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
+    #[cfg(feature = "telemetry")]
     let otlp_endpoint =
         std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
 
+    #[cfg(feature = "telemetry")]
     let tracer = opentelemetry_otlp::new_pipeline()
         .with_endpoint(&otlp_endpoint)
         .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
@@ -48,18 +50,19 @@ async fn main() -> Result<()> {
         .unwrap();
 
     // Finish layers
+    #[cfg(feature = "telemetry")]
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
     let logger = tracing_subscriber::fmt::layer().json();
 
-    let filter_layer = EnvFilter::try_from_default_env()
+    let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
     // Register all subscribers
-    let collector = Registry::default()
-        .with(telemetry)
-        .with(logger)
-        .with(filter_layer);
+    #[cfg(feature = "telemetry")]
+    let collector = Registry::default().with(telemetry).with(logger).with(env_filter);
+    #[cfg(not(feature = "telemetry"))]
+    let collector = Registry::default().with(logger).with(env_filter);
 
     tracing::subscriber::set_global_default(collector).unwrap();
 

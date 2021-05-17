@@ -13,7 +13,7 @@ forward-tempo:
 	kubectl port-forward -n monitoring service/grafana-agent-traces 55680:55680
 
 run:
-	OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run
+	OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
 
 compile:
 	docker run --rm \
