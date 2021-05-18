@@ -5,25 +5,21 @@ https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
 [![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/), sending traces to a local opentelemetry collector.
+A rust kubernetes reference controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/), with observability instrumentation.
 
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
 - A kube cluster / minikube / k3d.
-- The CRD installed
+- The CRD
 - Opentelemetry collector (optional when building locally)
 
-
 ### CRD
-Install the CRD and an instance of it into the cluster:
+Generate the CRD from the rust types and apply it to your cluster:
 
 ```sh
 cargo run --bin crdgen > yaml/foo-crd.yaml
 kubectl apply -f yaml/foo-crd.yaml
-
-# then:
-kubectl apply -f yaml/instance-bad.yaml
 ```
 
 ### Opentelemetry
@@ -39,7 +35,7 @@ make run
 Otherwise, run without the `telemetry` feature via: `cargo run`.
 
 ### Local Config
-You need a valid local kube config with rbac privilages described in the [deployment.yaml](./yaml/deployment.yaml).
+You need a valid local kube config with rbac privilages described in the [deployment.yaml](./yaml/deployment.yaml). A default `k3d` setup will work.
 
 
 ### In-cluster Config

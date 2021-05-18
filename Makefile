@@ -9,9 +9,6 @@ install:
 	cargo run --bin crdgen > yaml/foo-crd.yaml
 	kubectl apply -f yaml/foo-crd.yaml
 
-forward-tempo:
-	kubectl port-forward -n monitoring service/grafana-agent-traces 55680:55680
-
 run:
 	OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
 
@@ -41,7 +38,9 @@ tag-semver: build
 		docker push $(REPO)/$(NAME):$(SEMVER_VERSION) ; \
 	fi
 
-# Helpers for debugging with tempo as an otel collector
+# Helpers for using tempo as an otel collector
+forward-tempo:
+	kubectl port-forward -n monitoring service/grafana-agent-traces 55680:55680
 forward-tempo-metrics:
 	kubectl port-forward -n monitoring service/grafana-agent-traces 8080:8080
 check-tempo-metrics:
