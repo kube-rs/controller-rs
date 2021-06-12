@@ -12,6 +12,7 @@ use actix_web::{
 
 #[get("/metrics")]
 async fn metrics(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+    info!("got scraped!");
     let metrics = c.metrics();
     let encoder = TextEncoder::new();
     let mut buffer = vec![];

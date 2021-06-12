@@ -1472,8 +1472,7 @@ dependencies = [
 [[package]]
 name = "prometheus"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5986aa8d62380092d2f50f8b1cdba9cb9b6731ffd4b25b51fd126b6c3e05b99c"
+source = "git+https://github.com/clux/rust-prometheus.git?rev=c9f7ea9652e27cd2d872937c5efbe72f20db0d5e#c9f7ea9652e27cd2d872937c5efbe72f20db0d5e"
 dependencies = [
  "cfg-if",
  "fnv",
