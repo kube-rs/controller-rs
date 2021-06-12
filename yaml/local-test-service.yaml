@@ -1,3 +1,4 @@
+# This is a testing service to allow my k3d prometheus to scrape local ip
 ---
 apiVersion: v1
 kind: Service
@@ -24,6 +25,7 @@ metadata:
  namespace: default
 subsets:
 - addresses:
+    # my current local ip (used by the service)
     - ip: 192.168.1.246
   ports:
     - port: 8080
