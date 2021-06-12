@@ -5,9 +5,8 @@ metadata:
   name: foo-controller-local
   namespace: default
   annotations:
-    prometheus.io/scrape: enabled
-    prometheus.io/port: '8080'
-    prometheus.io/scheme: 'http'
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
   labels:
     app: foo-controller
 spec:
