@@ -5,7 +5,7 @@ use tracing::{debug, error, info, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 use actix_web::{
-    get, middleware,
+    get, middleware, http::header,
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -17,7 +17,11 @@ async fn metrics(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
     let encoder = TextEncoder::new();
     let mut buffer = vec![];
     encoder.encode(&metrics, &mut buffer).unwrap();
-    HttpResponse::Ok().body(buffer)
+
+    let mime = "application/openmetrics-text; version=1.0.0; charset=utf-8".parse::<mime::Mime>().unwrap();
+    HttpResponse::Ok()
+        .insert_header(header::ContentType(mime))
+        .body(buffer)
 }
 
 #[get("/health")]
