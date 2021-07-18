@@ -4,6 +4,8 @@ version = "0.10.2"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2018"
 default-run = "controller"
+license = "Apache-2.0"
+publish = false
 
 [[bin]]
 doc = false
