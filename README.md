@@ -48,6 +48,8 @@ export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers 
 kubectl port-forward ${FOO_POD} -n default 8080:8080 &
 ```
 
+You probably need to edit the `OPENTELEMETRY_ENDPOINT_URL` to fit your cluster.
+
 ## Usage
 Once the app is running, you can see that it observes `foo` events.
 

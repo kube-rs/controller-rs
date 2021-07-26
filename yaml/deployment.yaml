@@ -91,6 +91,7 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
+        # We are pointing to tempo or grafana tracing agent's otlp grpc receiver port
         - name: OPENTELEMETRY_ENDPOINT_URL
           value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         readinessProbe:
