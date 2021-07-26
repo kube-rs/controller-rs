@@ -77,7 +77,7 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:latest"
+        image: "clux/controller:rustls"
         imagePullPolicy: Always
         resources:
           limits:
@@ -92,7 +92,7 @@ spec:
           protocol: TCP
         env:
         - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "https://grafana-agent-traces.monitoring.svc.cluster.local:55680"
+          value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         readinessProbe:
           httpGet:
             path: /health

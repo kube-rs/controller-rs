@@ -30,8 +30,8 @@ actix-rt = "2.1.0"
 actix-web = "4.0.0-beta.1"
 futures = "0.3.15"
 tokio = { version = "1.6.0", features = ["macros"] }
-kube = { version = "0.57.0", features = ["derive"] }
-kube-runtime = "0.57.0"
+#kube = { version = "0.57.0", features = ["derive"] }
+#kube-runtime = "0.57.0"
 k8s-openapi = { version = "0.12.0", features = ["v1_20"], default-features=false }
 serde = { version = "1.0.126", features = ["derive"] }
 serde_json = "1.0.64"
@@ -51,8 +51,8 @@ prometheus = "0.12.0"
 #prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "c9f7ea9652e27cd2d872937c5efbe72f20db0d5e" }
 
 # local dev
-#kube = { path = "../kube-rs/kube", features = ["derive"] }
+#kube = { path = "../kube-rs/kube", features = ["derive", "client", "rustls-tls"], default-features=false }
 #kube-runtime = { path = "../kube-rs/kube-runtime" }
-#kube = { git = "https://github.com/clux/kube-rs.git", rev = "698f421652032aec5302eefa1593a4bee0d28b77", features = ["derive"] }
-#kube-runtime = { git = "https://github.com/clux/kube-rs.git", rev = "698f421652032aec5302eefa1593a4bee0d28b77" }
+kube = { git = "https://github.com/kube-rs/kube-rs.git", rev = "fb551ccc43f4c55501413e04940235a3329eea9f", features=["derive", "client", "rustls-tls"], default-features=false }
+kube-runtime = { git = "https://github.com/kube-rs/kube-rs.git", rev = "fb551ccc43f4c55501413e04940235a3329eea9f" }
 #prometheus = { path = "../rust-prometheus" }
