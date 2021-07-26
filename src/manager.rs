@@ -51,6 +51,7 @@ struct Data {
 
 #[instrument(skip(ctx), fields(trace_id))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
+
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();

@@ -6,6 +6,7 @@ metadata:
 spec:
   group: clux.dev
   names:
+    categories: []
     kind: Foo
     plural: foos
     shortNames: []
@@ -34,10 +35,6 @@ spec:
               properties:
                 is_bad:
                   type: boolean
-                last_updated:
-                  format: date-time
-                  nullable: true
-                  type: string
               required:
                 - is_bad
               type: object

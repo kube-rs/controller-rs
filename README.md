@@ -1,5 +1,5 @@
 ## controller-rs
-[![CircleCI](https://circleci.com/gh/clux/controller-rs/tree/master.svg?style=shield)](https://circleci.com/gh/clux/controller-rs/tree/master)
+[![CircleCI](https://circleci.com/gh/kube-rs/controller-rs/tree/master.svg?style=shield)](https://circleci.com/gh/kube-rs/controller-rs/tree/master)
 [![docker pulls](https://img.shields.io/docker/pulls/clux/controller.svg)](
 https://hub.docker.com/r/clux/controller/)
 [![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
@@ -47,6 +47,8 @@ sleep 10 # wait for docker pull and start on kube side
 export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers | awk '{print $1}')"
 kubectl port-forward ${FOO_POD} -n default 8080:8080 &
 ```
+
+You probably need to edit the `OPENTELEMETRY_ENDPOINT_URL` to fit your cluster.
 
 ## Usage
 Once the app is running, you can see that it observes `foo` events.
