@@ -5,7 +5,10 @@ pub fn get_trace_id() -> String {
     use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
     use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
 
-    let ctx = opentelemetry::Context::current();
-    //let ctx = tracing::Span::current().context(); //wtf
-    ctx.span().span_context().trace_id().to_hex()
+    tracing::Span::current()
+        .context()
+        .span()
+        .span_context()
+        .trace_id()
+        .to_hex()
 }

@@ -4,14 +4,13 @@ use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
-    CustomResource,
-    Resource
+    CustomResource, Resource,
 };
 use kube_runtime::controller::{Context, Controller, ReconcilerAction};
 use maplit::hashmap;
 use prometheus::{
-    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter,
-    HistogramOpts, HistogramVec, IntCounter,
+    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
+    HistogramVec, IntCounter,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -51,7 +50,6 @@ struct Data {
 
 #[instrument(skip(ctx), fields(trace_id))]
 async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
-
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -83,7 +81,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .reconcile_duration
         .with_label_values(&[])
         .observe(duration);
-        //.observe_with_exemplar(duration, ex);
+    //.observe_with_exemplar(duration, ex);
     ctx.get_ref().metrics.handled_events.inc();
     info!("Reconciled Foo \"{}\" in {}", name, ns);
 
