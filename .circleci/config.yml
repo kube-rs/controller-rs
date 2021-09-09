@@ -23,7 +23,7 @@ workflows:
 jobs:
   musl_build:
     docker:
-      - image: clux/muslrust:stable
+      - image: clux/muslrust:latest
     working_directory: /volume
     steps:
       - checkout
