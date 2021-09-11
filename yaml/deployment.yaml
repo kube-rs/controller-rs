@@ -77,7 +77,7 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:059-prev3"
+        image: clux/controller
         imagePullPolicy: Always
         resources:
           limits:
