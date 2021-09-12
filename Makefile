@@ -18,7 +18,7 @@ compile:
 		-v $$PWD:/volume \
 		-w /volume \
 		-t clux/muslrust:stable \
-		cargo build --release
+		cargo build --release --features=telemetry
 	sudo chown $$USER:$$USER -R target
 	mv target/x86_64-unknown-linux-musl/release/controller .
 
