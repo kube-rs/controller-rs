@@ -17,8 +17,8 @@ compile:
 		-v cargo-cache:/root/.cargo \
 		-v $$PWD:/volume \
 		-w /volume \
-		-it clux/muslrust:stable \
-		cargo build --release
+		-t clux/muslrust:stable \
+		cargo build --release --features=telemetry --bin controller
 	sudo chown $$USER:$$USER -R target
 	mv target/x86_64-unknown-linux-musl/release/controller .
 

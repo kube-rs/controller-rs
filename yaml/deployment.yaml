@@ -73,11 +73,14 @@ spec:
     metadata:
       labels:
         app: foo-controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
     spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: "clux/controller:latest"
+        image: clux/controller
         imagePullPolicy: Always
         resources:
           limits:
@@ -91,8 +94,9 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
+        # We are pointing to tempo or grafana tracing agent's otlp grpc receiver port
         - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "https://grafana-agent-traces.monitoring.svc.cluster.local:55680"
+          value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         readinessProbe:
           httpGet:
             path: /health
