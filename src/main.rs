@@ -30,22 +30,29 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
     HttpResponse::Ok().json(&state)
 }
 
+
 #[actix_rt::main]
 async fn main() -> Result<()> {
     #[cfg(feature = "telemetry")]
-    let otlp_endpoint =
-        std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
+    let otlp_endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
+
+    #[cfg(feature = "telemetry")]
+    let channel = tonic::transport::Channel::from_shared(otlp_endpoint).unwrap().connect().await.unwrap();
 
     #[cfg(feature = "telemetry")]
     let tracer = opentelemetry_otlp::new_pipeline()
-        .with_endpoint(&otlp_endpoint)
+        .tracing()
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_channel(channel),
+        )
         .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
             opentelemetry::sdk::Resource::new(vec![opentelemetry::KeyValue::new(
                 "service.name",
                 "foo-controller",
             )]),
         ))
-        .with_tonic()
         .install_batch(opentelemetry::runtime::Tokio)
         .unwrap();
 
