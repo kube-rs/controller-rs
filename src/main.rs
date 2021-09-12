@@ -30,23 +30,20 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
     HttpResponse::Ok().json(&state)
 }
 
+#[cfg(feature = "telemetry")]
+async fn init_tracer() -> opentelemetry::sdk::trace::Tracer {
+    let otlp_endpoint =
+        std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
 
-#[actix_rt::main]
-async fn main() -> Result<()> {
-    #[cfg(feature = "telemetry")]
-    let otlp_endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
+    let channel = tonic::transport::Channel::from_shared(otlp_endpoint)
+        .unwrap()
+        .connect()
+        .await
+        .unwrap();
 
-    #[cfg(feature = "telemetry")]
-    let channel = tonic::transport::Channel::from_shared(otlp_endpoint).unwrap().connect().await.unwrap();
-
-    #[cfg(feature = "telemetry")]
-    let tracer = opentelemetry_otlp::new_pipeline()
+    opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_channel(channel),
-        )
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_channel(channel))
         .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
             opentelemetry::sdk::Resource::new(vec![opentelemetry::KeyValue::new(
                 "service.name",
@@ -54,23 +51,26 @@ async fn main() -> Result<()> {
             )]),
         ))
         .install_batch(opentelemetry::runtime::Tokio)
-        .unwrap();
+        .unwrap()
+}
 
-    // Finish layers
+#[actix_rt::main]
+async fn main() -> Result<()> {
+    // Setup tracing layers
     #[cfg(feature = "telemetry")]
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let telemetry = tracing_opentelemetry::layer().with_tracer(init_tracer().await);
     let logger = tracing_subscriber::fmt::layer().json();
-
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
-    // Register all subscribers
+    // Decide on layers
     #[cfg(feature = "telemetry")]
     let collector = Registry::default().with(telemetry).with(logger).with(env_filter);
     #[cfg(not(feature = "telemetry"))]
     let collector = Registry::default().with(logger).with(env_filter);
 
+    // Initialize tracing
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // Start kubernetes controller
@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
     })
     .bind("0.0.0.0:8080")
     .expect("Can not bind to 0.0.0.0:8080")
-    .shutdown_timeout(0);
+    .shutdown_timeout(5);
 
     tokio::select! {
         _ = drainer => warn!("controller drained"),
