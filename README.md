@@ -1,11 +1,9 @@
 ## controller-rs
 [![CircleCI](https://circleci.com/gh/kube-rs/controller-rs/tree/master.svg?style=shield)](https://circleci.com/gh/kube-rs/controller-rs/tree/master)
-[![docker pulls](https://img.shields.io/docker/pulls/clux/controller.svg)](
-https://hub.docker.com/r/clux/controller/)
-[![docker image info](https://images.microbadger.com/badges/image/clux/controller.svg)](http://microbadger.com/images/clux/controller)
-[![docker tag](https://images.microbadger.com/badges/version/clux/controller.svg)](https://hub.docker.com/r/clux/controller/tags/)
+[![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
+https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes reference controller for a [`Foo` resource](https://github.com/clux/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/clux/kube-rs/), with observability instrumentation.
+A rust kubernetes reference controller for a [`Foo` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
 
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
@@ -75,6 +73,8 @@ handled_events 1
 $ curl 0.0.0.0:8080/
 {"last_event":"2019-07-17T22:31:37.591320068Z"}
 ```
+
+The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prometheus.io/scrape`](https://github.com/prometheus-community/helm-charts/blob/b69e89e73326e8b504102a75d668dc4351fcdb78/charts/prometheus/values.yaml#L1608-L1650).
 
 ## Events
 The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`.

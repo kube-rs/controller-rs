@@ -73,6 +73,9 @@ spec:
     metadata:
       labels:
         app: foo-controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
     spec:
       serviceAccountName: foo-controller
       containers:
