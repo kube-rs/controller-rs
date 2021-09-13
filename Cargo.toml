@@ -23,7 +23,7 @@ path = "src/lib.rs"
 
 [features]
 default = []
-telemetry = []
+telemetry = ["tonic", "opentelemetry-otlp"]
 
 [dependencies]
 actix-rt = "2.2.0"
@@ -44,9 +44,9 @@ tracing = "0.1.26"
 tracing-subscriber = { version = "0.2.20", features = ["json"] }
 tracing-opentelemetry = "0.15.0"
 opentelemetry = { version = "0.16.0", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.9.0", features = ["tokio"] }
+opentelemetry-otlp = { version = "0.9.0", features = ["tokio"], optional = true }
 prometheus = "0.12.0"
-tonic = "0.5.2"
+tonic = { version = "0.5.2", optional = true }
 
 # exemplar support (broken atm)
 #prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "c9f7ea9652e27cd2d872937c5efbe72f20db0d5e" }
