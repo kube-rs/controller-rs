@@ -26,7 +26,7 @@ You can either run locally, or build the image and deploy to your cluster.
 ### Local Development
 You need a valid local kube config with rbac privilages described in the [deployment.yaml](./yaml/deployment.yaml). A default `k3d` setup will work.
 
-This setup is the easiest (and fastest) since it can work with just port-forwarding and `cargo run`, but you won't have everything in the cluster at your disposal.
+This setup is the easiest (and fastest) since it can work with just `cargo run` (or port-forward + and set evar first for telemetry feature), but you won't have everything in the cluster at your disposal.
 
 ### In-cluster Development
 Deploy as a deployment with scoped access via a service account. See `yaml/deployment.yaml` as an example. Note that the image on dockerhub is built with the `telemetry` feature (which requires an otel collector).
