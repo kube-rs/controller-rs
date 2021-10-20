@@ -4,9 +4,9 @@ use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
-    CustomResource, Resource,
+    Resource, CustomResource,
+    runtime::controller::{Context, Controller, ReconcilerAction},
 };
-use kube_runtime::controller::{Context, Controller, ReconcilerAction};
 use maplit::hashmap;
 use prometheus::{
     default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
