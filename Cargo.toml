@@ -48,8 +48,14 @@ tonic = { version = "0.5.2", optional = true }
 
 # exemplar support (broken atm)
 #prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "c9f7ea9652e27cd2d872937c5efbe72f20db0d5e" }
-
-# local dev
-#kube = { path = "../kube-rs/kube", features = ["runtime", "client", "derive"] }
-kube = { git = "https://github.com/kube-rs/kube-rs.git", rev = "08c894cef560bd716c10b9bba426b1355e1907fe", features=["client", "runtime", "derive"] }
 #prometheus = { path = "../rust-prometheus" }
+
+[dependencies.kube]
+features = ["runtime", "client", "derive"]
+# normal release
+#version = "0.62.0"
+# testing new releases
+git = "https://github.com/kube-rs/kube-rs.git"
+rev = "52dee989daf8d120fcad1c75c2fd037052dea076"
+# local dev
+#path = "../kube-rs/kube"
