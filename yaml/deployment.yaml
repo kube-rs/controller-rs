@@ -21,6 +21,9 @@ rules:
     - watch
     - list
     - patch
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create"]
 
 ---
 # Binding the role to the account in default
