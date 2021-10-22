@@ -1,13 +1,16 @@
 use crate::{telemetry, Error, Result};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
+use k8s_openapi::api::core::v1::ObjectReference;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     Resource, CustomResource,
-    runtime::controller::{Context, Controller, ReconcilerAction},
+    runtime::{
+        controller::{Context, Controller, ReconcilerAction},
+        events::{Event, EventType, Recorder, Reporter},
+    },
 };
-use maplit::hashmap;
 use prometheus::{
     default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
     HistogramVec, IntCounter,
@@ -56,6 +59,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
+    let reporter = ctx.get_ref().state.read().await.reporter.clone();
+    let recorder = Recorder::new(client.clone(), reporter, foo.object_ref(&()));
     let name = ResourceExt::name(&foo);
     let ns = ResourceExt::namespace(&foo).expect("foo is namespaced");
     let foos: Api<Foo> = Api::namespaced(client, &ns);
@@ -74,8 +79,18 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .await
         .map_err(Error::KubeError)?;
 
+    if foo.spec.info.contains("bad") {
+        recorder.publish(Event {
+            type_: EventType::Normal,
+            reason: "BadFoo".into(),
+            note: Some(format!("Sending `{}` to detention", name)),
+            action: "Correcting".into(),
+            secondary: None,
+        }).await.map_err(Error::KubeError)?;
+    }
+
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
-    //let ex = Exemplar::new_with_labels(duration, hashmap! {"trace_id".to_string() => trace_id});
+    //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
     ctx.get_ref()
         .metrics
         .reconcile_duration
@@ -125,11 +140,14 @@ impl Metrics {
 pub struct State {
     #[serde(deserialize_with = "from_ts")]
     pub last_event: DateTime<Utc>,
+    #[serde(skip)]
+    pub reporter: Reporter,
 }
 impl State {
     fn new() -> Self {
         State {
             last_event: Utc::now(),
+            reporter: "foo-controller".into()
         }
     }
 }

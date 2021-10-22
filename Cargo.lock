@@ -394,7 +394,6 @@ dependencies = [
  "futures",
  "k8s-openapi",
  "kube",
- "maplit",
  "opentelemetry",
  "opentelemetry-otlp",
  "prometheus",
@@ -791,9 +790,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c06815895acec637cd6ed6e9662c935b866d20a106f8361892893a7d9234964"
+checksum = "7fd819562fcebdac5afc5c113c3ec36f902840b70fd4fc458799c8ce4607ae55"
 dependencies = [
  "bytes",
  "fnv",
@@ -845,9 +844,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
+checksum = "1ff4f84919677303da5f147645dbea6b1881f368d03ac84e1dc09031ebd7b2c6"
 dependencies = [
  "bytes",
  "http",
@@ -868,9 +867,9 @@ checksum = "6456b8a6c8f33fee7d958fcd1b60d55b11940a79e63ae87013e6d22e26034440"
 
 [[package]]
 name = "hyper"
-version = "0.14.13"
+version = "0.14.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15d1cfb9e4f68655fa04c01f59edb405b6074a0f7118ea881e5026e4a1cd8593"
+checksum = "2b91bb1f221b6ea1f1e4371216b70f40748774c2fb5971b450c07773fb92d26b"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1022,8 +1021,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=08c894cef560bd716c10b9bba426b1355e1907fe#08c894cef560bd716c10b9bba426b1355e1907fe"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8db51365e1dbaaf9e5216849ca7d0c03e2c43bae5a9d7a4f6104999448eb16b4"
 dependencies = [
  "kube-client",
  "kube-core",
@@ -1033,8 +1033,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=08c894cef560bd716c10b9bba426b1355e1907fe#08c894cef560bd716c10b9bba426b1355e1907fe"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cd12d68768b54bbd50547f4c7b57b73cff680ef8da3ba409463ee995cf0d707"
 dependencies = [
  "base64",
  "bytes",
@@ -1067,8 +1068,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=08c894cef560bd716c10b9bba426b1355e1907fe#08c894cef560bd716c10b9bba426b1355e1907fe"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cb6083983fc47d9144f1796d47edfeaba7e012de94c151bec8533af89d9b198"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1083,8 +1085,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=08c894cef560bd716c10b9bba426b1355e1907fe#08c894cef560bd716c10b9bba426b1355e1907fe"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16f61042dcda7b3026e2a741692ea8feba6c76c7781eeb5380364f3dacb0ce85"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1095,8 +1098,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=08c894cef560bd716c10b9bba426b1355e1907fe#08c894cef560bd716c10b9bba426b1355e1907fe"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dc77aa51353e95d9f16157adf9f8e5322ec8fa2bffaabe895ed815b968cfc5e"
 dependencies = [
  "dashmap",
  "derivative",
@@ -1173,12 +1177,6 @@ checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
 ]
-
-[[package]]
-name = "maplit"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "matchers"
@@ -1512,9 +1510,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.20"
+version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
+checksum = "10e2fcbb64ecbe64c8e040a386c3104d384583af58b956d870aaaf229df6e66d"
 
 [[package]]
 name = "ppv-lite86"
