@@ -37,7 +37,6 @@ chrono = { version = "0.4.19", features = ["serde"] }
 thiserror = "1.0.29"
 schemars = { version = "0.8.3", features = ["chrono"] }
 serde_yaml = "0.8.21"
-maplit = "1.0.2"
 tracing = "0.1.26"
 tracing-subscriber = { version = "0.2.20", features = ["json"] }
 tracing-opentelemetry = "0.15.0"
@@ -52,10 +51,9 @@ tonic = { version = "0.5.2", optional = true }
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-# normal release
-#version = "0.62.0"
-# testing new releases
-git = "https://github.com/kube-rs/kube-rs.git"
-rev = "52dee989daf8d120fcad1c75c2fd037052dea076"
-# local dev
+version = "0.62.0"
+
+# testing new releases - ignore
+#git = "https://github.com/kube-rs/kube-rs.git"
+#rev = "52dee989daf8d120fcad1c75c2fd037052dea076"
 #path = "../kube-rs/kube"

@@ -11,7 +11,6 @@ use kube::{
         events::{Event, EventType, Recorder, Reporter},
     },
 };
-use maplit::hashmap;
 use prometheus::{
     default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
     HistogramVec, IntCounter,
@@ -91,7 +90,7 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     }
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
-    //let ex = Exemplar::new_with_labels(duration, hashmap! {"trace_id".to_string() => trace_id});
+    //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
     ctx.get_ref()
         .metrics
         .reconcile_duration

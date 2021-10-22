@@ -394,7 +394,6 @@ dependencies = [
  "futures",
  "k8s-openapi",
  "kube",
- "maplit",
  "opentelemetry",
  "opentelemetry-otlp",
  "prometheus",
@@ -1022,8 +1021,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=52dee989daf8d120fcad1c75c2fd037052dea076#52dee989daf8d120fcad1c75c2fd037052dea076"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8db51365e1dbaaf9e5216849ca7d0c03e2c43bae5a9d7a4f6104999448eb16b4"
 dependencies = [
  "kube-client",
  "kube-core",
@@ -1033,8 +1033,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=52dee989daf8d120fcad1c75c2fd037052dea076#52dee989daf8d120fcad1c75c2fd037052dea076"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cd12d68768b54bbd50547f4c7b57b73cff680ef8da3ba409463ee995cf0d707"
 dependencies = [
  "base64",
  "bytes",
@@ -1067,8 +1068,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=52dee989daf8d120fcad1c75c2fd037052dea076#52dee989daf8d120fcad1c75c2fd037052dea076"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cb6083983fc47d9144f1796d47edfeaba7e012de94c151bec8533af89d9b198"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1083,8 +1085,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=52dee989daf8d120fcad1c75c2fd037052dea076#52dee989daf8d120fcad1c75c2fd037052dea076"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16f61042dcda7b3026e2a741692ea8feba6c76c7781eeb5380364f3dacb0ce85"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1095,8 +1098,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.61.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=52dee989daf8d120fcad1c75c2fd037052dea076#52dee989daf8d120fcad1c75c2fd037052dea076"
+version = "0.62.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dc77aa51353e95d9f16157adf9f8e5322ec8fa2bffaabe895ed815b968cfc5e"
 dependencies = [
  "dashmap",
  "derivative",
@@ -1173,12 +1177,6 @@ checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
 ]
-
-[[package]]
-name = "maplit"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "matchers"
