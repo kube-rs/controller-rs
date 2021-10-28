@@ -386,7 +386,7 @@ checksum = "f92cfa0fd5690b3cf8c1ef2cabbd9b7ef22fa53cf5e1f92b05103f6d5d1cf6e7"
 
 [[package]]
 name = "controller"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "actix-rt",
  "actix-web",
@@ -1021,10 +1021,11 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.62.0"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8db51365e1dbaaf9e5216849ca7d0c03e2c43bae5a9d7a4f6104999448eb16b4"
+checksum = "75e877325e5540a3041b519bd7ee27a858691f9f816cf533d652cbb33cbfea45"
 dependencies = [
+ "k8s-openapi",
  "kube-client",
  "kube-core",
  "kube-derive",
@@ -1033,9 +1034,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.62.0"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cd12d68768b54bbd50547f4c7b57b73cff680ef8da3ba409463ee995cf0d707"
+checksum = "bb8e1a36f17c63e263ba0ffa2c0658de315c75decad983d83aaeafeda578cc78"
 dependencies = [
  "base64",
  "bytes",
@@ -1068,9 +1069,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.62.0"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cb6083983fc47d9144f1796d47edfeaba7e012de94c151bec8533af89d9b198"
+checksum = "a91e572d244436fbc0d0b5a4829d96b9d623e08eb6b5d1e80418c1fab10b162a"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1085,9 +1086,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.62.0"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f61042dcda7b3026e2a741692ea8feba6c76c7781eeb5380364f3dacb0ce85"
+checksum = "2034f57f3db36978ef366f45f1e263e623d9a6a8fcc6a6b1ef8879a213e1d2c4"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1098,9 +1099,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.62.0"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dc77aa51353e95d9f16157adf9f8e5322ec8fa2bffaabe895ed815b968cfc5e"
+checksum = "6018cf8410f9d460be3a3ac35deef63b71c860c368016d7bf6871994343728b4"
 dependencies = [
  "dashmap",
  "derivative",
