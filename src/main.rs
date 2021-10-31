@@ -1,36 +1,49 @@
 #![allow(unused_imports, unused_variables)]
 pub use controller::*;
+use kube::core::response::StatusCause;
 use prometheus::{Encoder, TextEncoder};
-use tracing::{debug, error, info, trace, warn};
+use std::{
+    convert::{Infallible, TryFrom},
+    net::SocketAddr,
+};
+use tokio::signal::unix::{signal, SignalKind};
+use tracing::{debug, error, info, instrument, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
-use actix_web::{
-    get, middleware,
-    web::{self, Data},
-    App, HttpRequest, HttpResponse, HttpServer, Responder,
+use axum::{
+    body::{Body, Bytes, Full},
+    extract::{Extension, Path},
+    handler::get,
+    http::{Response, StatusCode},
+    response::IntoResponse,
+    AddExtensionLayer, Json, Router,
 };
+use tower_http::trace::TraceLayer;
 
-#[get("/metrics")]
-async fn metrics(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+// Intended route: /metrics
+#[instrument(skip(c))]
+async fn metrics(c: Extension<Manager>) -> (StatusCode, Vec<u8>) {
     let metrics = c.metrics();
     let encoder = TextEncoder::new();
     let mut buffer = vec![];
     encoder.encode(&metrics, &mut buffer).unwrap();
-    HttpResponse::Ok().body(buffer)
+    (StatusCode::OK, buffer)
 }
 
-#[get("/health")]
-async fn health(_: HttpRequest) -> impl Responder {
-    HttpResponse::Ok().json("healthy")
+// Intended route: /health
+#[instrument]
+async fn health() -> (StatusCode, Json<&'static str>) {
+    (StatusCode::OK, Json("healthy"))
 }
 
-#[get("/")]
-async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+// Intended route: /
+#[instrument(skip(c))]
+async fn index(c: Extension<Manager>) -> Result<Json<controller::manager::State>, Infallible> {
     let state = c.state().await;
-    HttpResponse::Ok().json(&state)
+    Ok(Json(state))
 }
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
@@ -52,22 +65,27 @@ async fn main() -> Result<()> {
     // Start kubernetes controller
     let (manager, drainer) = Manager::new().await;
 
+    // Define routes
+    let app = Router::new()
+        .route("/", get(index))
+        .route("/metrics", get(metrics))
+        .layer(AddExtensionLayer::new(manager.clone()))
+        .layer(TraceLayer::new_for_http())
+        .boxed()
+        // Reminder: routes added *after* TraceLayer are not subject to its logging behavior
+        .route("/health", get(health));
+
     // Start web server
-    let server = HttpServer::new(move || {
-        App::new()
-            .app_data(Data::new(manager.clone()))
-            .wrap(middleware::Logger::default().exclude("/health"))
-            .service(index)
-            .service(health)
-            .service(metrics)
-    })
-    .bind("0.0.0.0:8080")
-    .expect("Can not bind to 0.0.0.0:8080")
-    .shutdown_timeout(5);
+    let mut shutdown = signal(SignalKind::terminate()).expect("could not monitor for SIGTERM");
+    let server = axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], 8080)))
+        .serve(app.into_make_service())
+        .with_graceful_shutdown(async move {
+            shutdown.recv().await;
+        });
 
     tokio::select! {
         _ = drainer => warn!("controller drained"),
-        _ = server.run() => info!("actix exited"),
+        _ = server => info!("axum exited"),
     }
     Ok(())
 }
