@@ -130,7 +130,8 @@ jobs:
           components: rustfmt,clippy
           override: true
       - name: Run rustfmt
-        run: cargo +nightly fmt --features=telemetry -- --check
+        run: cargo +nightly fmt -- --check
       - uses: actions-rs/clippy-check@v1
         with:
+          args: --all-features
           token: ${{ secrets.GITHUB_TOKEN }}
