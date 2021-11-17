@@ -8,64 +8,78 @@ A rust kubernetes reference controller for a [`Foo` resource](https://github.com
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
-- A kube cluster / minikube / k3d.
-- The CRD
-- Opentelemetry collector (optional when building locally)
+- A Kubernetes cluster / k3d instance
+- The [CRD](./yaml/foo-crd.yaml)
+- Opentelemetry collector (**optional**)
 
-### CRD
-Generate the CRD from the rust types and apply it to your cluster:
+### Cluster
+As an example; get `k3d` then:
 
 ```sh
-cargo run --bin crdgen > yaml/foo-crd.yaml
-kubectl apply -f yaml/foo-crd.yaml
+k3d cluster create --servers 1 --agents 1 main
+k3d kubeconfig get --all > ~/.kube/k3d
+export KUBECONFIG="$HOME/.kube/k3d"
 ```
 
-## Development Modes
-You can either run locally, or build the image and deploy to your cluster.
+A default `k3d` setup is fastest for local dev due to its local registry.
 
-### Local Development
-You need a valid local kube config with rbac privilages described in the [deployment.yaml](./yaml/deployment.yaml). A default `k3d` setup will work.
+### CRD
+Apply the CRD from [cached file](./yaml/foo-crd.yaml), or pipe it from `crdgen` (best if changing it):
 
-This setup is the easiest (and fastest) since it can work with just `cargo run` (or port-forward + and set evar first for telemetry feature), but you won't have everything in the cluster at your disposal.
+```sh
+cargo run --bin crdgen | kubectl apply -f -
+```
 
-### In-cluster Development
-Deploy as a deployment with scoped access via a service account. See `yaml/deployment.yaml` as an example. Note that the image on dockerhub is built with the `telemetry` feature (which requires an otel collector).
+### Opentelemetry
+Setup an opentelemetry collector in your cluster. [Tempo](https://github.com/grafana/helm-charts/tree/main/charts/tempo) / [opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator) / [grafana agent](https://github.com/grafana/helm-charts/tree/main/charts/agent-operator) should all work out of the box. If your collector does not support grpc otlp you need to change the exporter in [`main.rs`](./src/main.rs).
+
+If you don't have a collector, you must build locally without the `opentelemetry` feature.
+
+## Running
+
+### Locally
+
+```sh
+cargo run
+```
+
+or, with optional telemetry (change as per requirements):
+
+```sh
+OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
+```
+
+### In-cluster
+Use either your locally built image or the one from dockerhub (using opentemetry features by default). Edit the [deployment](./yaml/deployment.yaml)'s image tag appropriately, and then:
 
 ```sh
 kubectl apply -f yaml/deployment.yaml
-sleep 10 # wait for docker pull and start on kube side
-export FOO_POD="$(kubectl get pods -n default -lapp=foo-controller --no-headers | awk '{print $1}')"
-kubectl port-forward ${FOO_POD} -n default 8080:8080 &
+kubectl wait --for=condition=available deploy/foo-controller --timeout=20s
+kubectl port-forward service/foo-controller 8080:80
 ```
 
-This is the more complicated (and slightly slower) setup, since you need to configure the deployment to point at the otel colector, (and possibly build the image yourself to avoid telemetry). To simplify the above, we recommend using [tilt](https://tilt.dev/), via `tilt up` instead.
+To build and deploy the image quickly, we recommend using [tilt](https://tilt.dev/), via `tilt up` instead.
 
-## Features
-### Opentelemetry
-When using the `telemetry` feature, you need an opentelemetry collector configured. Anything should work, but you might need to change the exporter in `main.rs` if it's not grpc otel.
-
-If you have a running [Tempo](https://grafana.com/oss/tempo/) agent/deployment, you can `make forward-tempo` while developing locally, and configure the `OPENTELEMETRY_ENDPOINT_URL` evar as per `make run`.
-
-You probably need to edit the `OPENTELEMETRY_ENDPOINT_URL` to fit your cluster.
+**NB**: namespace is assumed to be `default`. If you need a different namespace, you can replace `default` with whatever you want in the yaml and set the namespace in your current-context to get all the commands here to work.
 
 ## Usage
-Once the app is running, you can see that it observes `foo` events.
+In either of the run scenarios, your app is listening on port `8080`, and it will observe `foo` events.
 
 Try some of:
 
 ```sh
-kubectl apply -f yaml/instance-good.yaml -n default
-kubectl delete foo good -n default
+kubectl apply -f yaml/instance-good.yaml
+kubectl delete foo good
 kubectl edit foo good # change info to contain bad
 ```
 
 The reconciler will run and write the status object on every change. You should see results in the logs of the pod, or on the .status object outputs of `kubectl get foos -oyaml`.
 
-## Webapp output
+### Webapp output
 The sample web server exposes some example metrics and debug information you can inspect with `curl`.
 
 ```sh
-$ kubectl apply -f yaml/instance-good.yaml -n default
+$ kubectl apply -f yaml/instance-good.yaml
 $ curl 0.0.0.0:8080/metrics
 # HELP handled_events handled events
 # TYPE handled_events counter
@@ -76,7 +90,7 @@ $ curl 0.0.0.0:8080/
 
 The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prometheus.io/scrape`](https://github.com/prometheus-community/helm-charts/blob/b69e89e73326e8b504102a75d668dc4351fcdb78/charts/prometheus/values.yaml#L1608-L1650).
 
-## Events
+### Events
 The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe foo bad`.
 
 While this controller has no child objects configured, there is a `configmapgen_controller` example in [kube-rs](https://github.com/kube-rs/kube-rs/).
