@@ -21,10 +21,12 @@ jobs:
           IMAGE="${{ env.IMAGE }}"
           if curl -sSL https://registry.hub.docker.com/v1/repositories/${IMAGE}/tags | jq -r ".[].name" | grep -q ${TAG}; then
             echo "Semver tag ${TAG} already exists - not publishing"
-            echo ::set-output name=tags::${IMAGE}:latest
+            echo ::set-output name=tagsbase::${IMAGE}:latest
+            echo ::set-output name=tagsotel::${IMAGE}:latest-otel
           else
             echo "Semver tag ${TAG} not found - publishing"
-            echo ::set-output name=tags::${IMAGE}:latest,${IMAGE}:${TAG}
+            echo ::set-output name=tagsbase::${IMAGE}:latest,${IMAGE}:${TAG}
+            echo ::set-output name=tagsotel::${IMAGE}:latest-otel,${IMAGE}:${TAG}-otel
           fi
           echo ::set-output name=semver::${TAG}
 
@@ -71,6 +73,29 @@ jobs:
             target
           key: musl-cargo-${{ hashFiles('**/Cargo.toml') }}
 
+      - name: Compile base features
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              cargo build --release -v
+          cp target/x86_64-unknown-linux-musl/release/controller .
+
+      - name: Build and push controller image with base features
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.prep.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha,scope=version5
+          cache-to: type=gha,scope=version5,mode=max
+
       - name: Compile with telemetry
         run: |
           mkdir -p ~/.cargo/{git,registry}
@@ -82,16 +107,18 @@ jobs:
               cargo build --features=telemetry --release -v
           cp target/x86_64-unknown-linux-musl/release/controller .
 
-      - uses: docker/build-push-action@v2
+      - name: Build and push controller image with telemetry
+        uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.prep.outputs.tags }}
+          tags: ${{ steps.prep.outputs.tagsotel }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           cache-from: type=gha,scope=version5
           cache-to: type=gha,scope=version5,mode=max
+
 
   lint:
     runs-on: ubuntu-latest
