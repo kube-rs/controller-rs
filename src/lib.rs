@@ -1,5 +1,6 @@
 #![warn(rust_2018_idioms)]
 #![allow(unused_imports)]
+#![allow(clippy::blacklisted_name)]
 use thiserror::Error;
 
 #[derive(Error, Debug)]
