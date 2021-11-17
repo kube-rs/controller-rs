@@ -160,8 +160,6 @@ impl State {
 pub struct Manager {
     /// In memory state
     state: Arc<RwLock<State>>,
-    /// Various prometheus metrics
-    metrics: Metrics,
 }
 
 /// Example Manager that owns a Controller for Foo
@@ -194,7 +192,7 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (Self { state, metrics }, drainer)
+        (Self { state }, drainer)
     }
 
     /// Metrics getter
