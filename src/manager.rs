@@ -5,11 +5,11 @@ use k8s_openapi::api::core::v1::ObjectReference;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
-    Resource, CustomResource,
     runtime::{
         controller::{Context, Controller, ReconcilerAction},
         events::{Event, EventType, Recorder, Reporter},
     },
+    CustomResource, Resource,
 };
 use prometheus::{
     default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
@@ -80,13 +80,16 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
         .map_err(Error::KubeError)?;
 
     if foo.spec.info.contains("bad") {
-        recorder.publish(Event {
-            type_: EventType::Normal,
-            reason: "BadFoo".into(),
-            note: Some(format!("Sending `{}` to detention", name)),
-            action: "Correcting".into(),
-            secondary: None,
-        }).await.map_err(Error::KubeError)?;
+        recorder
+            .publish(Event {
+                type_: EventType::Normal,
+                reason: "BadFoo".into(),
+                note: Some(format!("Sending `{}` to detention", name)),
+                action: "Correcting".into(),
+                secondary: None,
+            })
+            .await
+            .map_err(Error::KubeError)?;
     }
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
@@ -147,7 +150,7 @@ impl State {
     fn new() -> Self {
         State {
             last_event: Utc::now(),
-            reporter: "foo-controller".into()
+            reporter: "foo-controller".into(),
         }
     }
 }
@@ -157,8 +160,6 @@ impl State {
 pub struct Manager {
     /// In memory state
     state: Arc<RwLock<State>>,
-    /// Various prometheus metrics
-    metrics: Metrics,
 }
 
 /// Example Manager that owns a Controller for Foo
@@ -191,7 +192,7 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (Self { state, metrics }, drainer)
+        (Self { state }, drainer)
     }
 
     /// Metrics getter

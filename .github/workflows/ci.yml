@@ -1,0 +1,137 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE: clux/controller
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare image tags
+        id: prep
+        run: |
+          TAG=$(grep -E "^version" Cargo.toml | awk -F"\"" '{print $2}' | head -n 1)
+          IMAGE="${{ env.IMAGE }}"
+          if curl -sSL https://registry.hub.docker.com/v1/repositories/${IMAGE}/tags | jq -r ".[].name" | grep -q ${TAG}; then
+            echo "Semver tag ${TAG} already exists - not publishing"
+            echo ::set-output name=tagsbase::${IMAGE}:latest
+            echo ::set-output name=tagsotel::${IMAGE}:latest-otel
+          else
+            echo "Semver tag ${TAG} not found - publishing"
+            echo ::set-output name=tagsbase::${IMAGE}:latest,${IMAGE}:${TAG}
+            echo ::set-output name=tagsotel::${IMAGE}:latest-otel,${IMAGE}:${TAG}-otel
+          fi
+          echo ::set-output name=semver::${TAG}
+
+      - uses: docker/setup-buildx-action@v1
+        id: buildx
+
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
+      - uses: docker/metadata-action@v3
+        id: docker_meta
+        with:
+          images: ${{ env.IMAGE }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.prep.outputs.semver }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=${{ env.IMAGE }}
+
+      - uses: docker/login-action@v1
+        if: github.event_name != 'pull_request'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-dockerx6-${{ steps.prep.outputs.semver }}
+          restore-keys: |
+            ${{ runner.os }}-dockerx6-
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git
+            target
+          key: musl-cargo-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Compile base features
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              cargo build --release -v
+          cp target/x86_64-unknown-linux-musl/release/controller .
+
+      - name: Build and push controller image with base features
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.prep.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha,scope=version5
+          cache-to: type=gha,scope=version5,mode=max
+
+      - name: Compile with telemetry
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              cargo build --features=telemetry --release -v
+          cp target/x86_64-unknown-linux-musl/release/controller .
+
+      - name: Build and push controller image with telemetry
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.prep.outputs.tagsotel }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha,scope=version5
+          cache-to: type=gha,scope=version5,mode=max
+
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt,clippy
+          override: true
+      - name: Run rustfmt
+        run: cargo +nightly fmt -- --check
+      - uses: actions-rs/clippy-check@v1
+        with:
+          args: --all-features
+          token: ${{ secrets.GITHUB_TOKEN }}
