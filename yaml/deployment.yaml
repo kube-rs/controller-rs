@@ -83,7 +83,7 @@ spec:
       serviceAccountName: foo-controller
       containers:
       - name: foo-controller
-        image: clux/controller
+        image: clux/controller:latest-otel
         imagePullPolicy: Always
         resources:
           limits:

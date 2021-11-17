@@ -33,7 +33,7 @@ cargo run --bin crdgen | kubectl apply -f -
 ### Opentelemetry
 Setup an opentelemetry collector in your cluster. [Tempo](https://github.com/grafana/helm-charts/tree/main/charts/tempo) / [opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator) / [grafana agent](https://github.com/grafana/helm-charts/tree/main/charts/agent-operator) should all work out of the box. If your collector does not support grpc otlp you need to change the exporter in [`main.rs`](./src/main.rs).
 
-If you don't have a collector, you must build locally without the `opentelemetry` feature.
+If you don't have a collector, you can build locally without the `opentelemetry` feature, or pull images without the `-otel` tag suffix.
 
 ## Running
 
@@ -93,4 +93,4 @@ The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prome
 ### Events
 The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe foo bad`.
 
-While this controller has no child objects configured, there is a `configmapgen_controller` example in [kube-rs](https://github.com/kube-rs/kube-rs/).
+While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube-rs/blob/master/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube-rs/).
