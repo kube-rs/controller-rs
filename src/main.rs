@@ -30,7 +30,7 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
     HttpResponse::Ok().json(&state)
 }
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
