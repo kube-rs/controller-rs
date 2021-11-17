@@ -1,5 +1,5 @@
 ## controller-rs
-[![CircleCI](https://circleci.com/gh/kube-rs/controller-rs/tree/master.svg?style=shield)](https://circleci.com/gh/kube-rs/controller-rs/tree/master)
+[![ci](https://github.com/kube-rs/controller-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/kube-rs/controller-rs/actions/workflows/ci.yml)
 [![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
 https://hub.docker.com/r/clux/controller/tags/)
 
