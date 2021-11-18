@@ -91,7 +91,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.prep.outputs.tags }}
+          tags: ${{ steps.prep.outputs.tagsbase }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           cache-from: type=gha,scope=version5
           cache-to: type=gha,scope=version5,mode=max
