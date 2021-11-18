@@ -22,11 +22,11 @@ jobs:
           if curl -sSL https://registry.hub.docker.com/v1/repositories/${IMAGE}/tags | jq -r ".[].name" | grep -q ${TAG}; then
             echo "Semver tag ${TAG} already exists - not publishing"
             echo ::set-output name=tagsbase::${IMAGE}:latest
-            echo ::set-output name=tagsotel::${IMAGE}:latest-otel
+            echo ::set-output name=tagsotel::${IMAGE}:otel
           else
             echo "Semver tag ${TAG} not found - publishing"
             echo ::set-output name=tagsbase::${IMAGE}:latest,${IMAGE}:${TAG}
-            echo ::set-output name=tagsotel::${IMAGE}:latest-otel,${IMAGE}:${TAG}-otel
+            echo ::set-output name=tagsotel::${IMAGE}:otel,${IMAGE}:otel-${TAG}
           fi
           echo ::set-output name=semver::${TAG}
 
