@@ -24,11 +24,11 @@ compile:
   #!/usr/bin/env bash
   docker run --rm \
     -v cargo-cache:/root/.cargo \
-    -v $$PWD:/volume \
+    -v $PWD:/volume \
     -w /volume \
     -t clux/muslrust:stable \
     cargo build --release --features=telemetry --bin controller
-  sudo chown $$USER:$$USER -R target
+  sudo chown $USER:$USER -R target
   mv target/x86_64-unknown-linux-musl/release/controller .
 
 # docker build (requires compile step first)

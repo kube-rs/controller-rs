@@ -52,7 +52,7 @@ struct Data {
 }
 
 #[instrument(skip(ctx), fields(trace_id))]
-async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
+async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -61,8 +61,8 @@ async fn reconcile(foo: Foo, ctx: Context<Data>) -> Result<ReconcilerAction, Err
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let reporter = ctx.get_ref().state.read().await.reporter.clone();
     let recorder = Recorder::new(client.clone(), reporter, foo.object_ref(&()));
-    let name = ResourceExt::name(&foo);
-    let ns = ResourceExt::namespace(&foo).expect("foo is namespaced");
+    let name = ResourceExt::name(foo.as_ref());
+    let ns = ResourceExt::namespace(foo.as_ref()).expect("foo is namespaced");
     let foos: Api<Foo> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
