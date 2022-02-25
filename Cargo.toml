@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.11.4"
+version = "0.11.5"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2021"
 default-run = "controller"
