@@ -29,8 +29,7 @@ compile:
     -t clux/muslrust:stable \
     cargo build --release --bin controller
   # TODO: re-enable --features=telemetry
-  sudo chown $USER:$USER -R target
-  mv target/x86_64-unknown-linux-musl/release/controller .
+  cp target/x86_64-unknown-linux-musl/release/controller .
 
 # docker build (requires compile step first)
 build:
