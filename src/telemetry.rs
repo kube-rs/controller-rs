@@ -14,6 +14,7 @@ pub fn get_trace_id() -> TraceId {
         .trace_id()
 }
 
+
 #[cfg(feature = "telemetry")]
 pub async fn init_tracer() -> opentelemetry::sdk::trace::Tracer {
     let otlp_endpoint =

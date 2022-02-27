@@ -33,7 +33,7 @@ cargo run --bin crdgen | kubectl apply -f -
 ### Opentelemetry
 Setup an opentelemetry collector in your cluster. [Tempo](https://github.com/grafana/helm-charts/tree/main/charts/tempo) / [opentelemetry-operator](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator) / [grafana agent](https://github.com/grafana/helm-charts/tree/main/charts/agent-operator) should all work out of the box. If your collector does not support grpc otlp you need to change the exporter in [`main.rs`](./src/main.rs).
 
-If you don't have a collector, you can build locally without the `telemetry` feature, or pull images [without the `otel` tag](https://hub.docker.com/r/clux/controller/tags/).
+If you don't have a collector, you can build locally without the `telemetry` feature (`tilt up telemetry`), or pull images [without the `otel` tag](https://hub.docker.com/r/clux/controller/tags/).
 
 ## Running
 

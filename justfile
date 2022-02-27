@@ -4,7 +4,7 @@ VERSION := `git rev-parse HEAD`
 SEMVER_VERSION := `grep version Cargo.toml | awk -F"\"" '{print $2}' | head -n 1`
 
 default:
-  @just --list --unsorted | grep -v "    default"
+  @just --list --unsorted --color=always | rg -v "    default"
 
 # generate and install crd into the cluster
 install-crd:
@@ -19,16 +19,15 @@ run-telemetry:
 run:
   RUST_LOG=info,kube=trace,controller=debug cargo run
 
-# compile for musl (used in docker image)
-compile:
+# compile for musl (for docker image)
+compile features="":
   #!/usr/bin/env bash
   docker run --rm \
     -v cargo-cache:/root/.cargo \
     -v $PWD:/volume \
     -w /volume \
     -t clux/muslrust:stable \
-    cargo build --release --features=telemetry --bin controller
-  # TODO: re-enable --features=telemetry
+    cargo build --release --features={{features}} --bin controller
   cp target/x86_64-unknown-linux-musl/release/controller .
 
 # docker build (requires compile step first)

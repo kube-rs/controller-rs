@@ -1,4 +1,14 @@
-local_resource('compile', 'just compile')
+# Usage default features:
+# tilt up
+#
+# Usage with features:
+# tilt up telemetry
+config.define_string("features", args=True)
+cfg = config.parse()
+features = cfg.get('features', "")
+print("compiling with features: {}".format(features))
+
+local_resource('compile', 'just compile %s' % features)
 docker_build('clux/controller', '.', dockerfile='Dockerfile')
 k8s_yaml('yaml/deployment.yaml')
 k8s_resource('foo-controller', port_forwards=8080)
