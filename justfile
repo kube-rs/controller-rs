@@ -27,7 +27,7 @@ compile:
     -v $PWD:/volume \
     -w /volume \
     -t clux/muslrust:stable \
-    cargo build --release --bin controller
+    cargo build --release --features=telemetry --bin controller
   # TODO: re-enable --features=telemetry
   cp target/x86_64-unknown-linux-musl/release/controller .
 

@@ -38,12 +38,12 @@ schemars = { version = "0.8.8", features = ["chrono"] }
 serde_yaml = "0.8.23"
 tracing = "0.1.30"
 tracing-subscriber = { version = "0.3.1", features = ["json", "env-filter"] }
-tracing-opentelemetry = "0.16.0"
-opentelemetry = { version = "0.16.0", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.9.0", features = ["tokio"], optional = true }
+tracing-opentelemetry = "0.17.2"
+opentelemetry = { version = "0.17.0", features = ["trace", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.10.0", features = ["tokio"], optional = true }
 prometheus = "0.13.0"
 # Can't upgrade this until opentelemetry-otlp upgrades it
-tonic = { version = "0.5.2", optional = true }
+tonic = { version = "0.6.2", optional = true }
 
 # exemplar support (broken atm)
 #prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "c9f7ea9652e27cd2d872937c5efbe72f20db0d5e" }
