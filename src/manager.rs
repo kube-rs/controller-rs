@@ -6,7 +6,7 @@ use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     runtime::{
-        controller::{Context, Controller, ReconcilerAction},
+        controller::{Action, Context, Controller},
         events::{Event, EventType, Recorder, Reporter},
     },
     CustomResource, Resource,
@@ -52,7 +52,7 @@ struct Data {
 }
 
 #[instrument(skip(ctx), fields(trace_id))]
-async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<ReconcilerAction, Error> {
+async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -104,15 +104,12 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<ReconcilerAction
     info!("Reconciled Foo \"{}\" in {}", name, ns);
 
     // If no events were received, check back every 30 minutes
-    Ok(ReconcilerAction {
-        requeue_after: Some(Duration::from_secs(3600 / 2)),
-    })
+    Ok(Action::requeue(Duration::from_secs(30 * 60)))
 }
-fn error_policy(error: &Error, _ctx: Context<Data>) -> ReconcilerAction {
+
+fn error_policy(error: &Error, _ctx: Context<Data>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ReconcilerAction {
-        requeue_after: Some(Duration::from_secs(360)),
-    }
+    Action::requeue(Duration::from_secs(5 * 60))
 }
 
 /// Metrics exposed on /metrics

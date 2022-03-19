@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.11.5"
+version = "0.11.6"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2021"
 default-run = "controller"
@@ -36,7 +36,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 thiserror = "1.0.30"
 schemars = { version = "0.8.8", features = ["chrono"] }
 serde_yaml = "0.8.23"
-tracing = "0.1.30"
+tracing = "0.1.32"
 tracing-subscriber = { version = "0.3.1", features = ["json", "env-filter"] }
 tracing-opentelemetry = "0.17.2"
 opentelemetry = { version = "0.17.0", features = ["trace", "rt-tokio"] }
@@ -51,8 +51,8 @@ tonic = { version = "0.6.2", optional = true }
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.69.1"
+#version = "0.69.1"
 
 # testing new releases - ignore
-#git = "https://github.com/kube-rs/kube-rs.git"
-#rev = "2a2c5d99113f880ec7fc6dcaa4aefee327e4b088"
+git = "https://github.com/kube-rs/kube-rs.git"
+rev = "a9d9975638dd0ec35a117eeea8afaaa5548edd89"
