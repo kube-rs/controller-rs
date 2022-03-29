@@ -81,9 +81,25 @@ The sample web server exposes some example metrics and debug information you can
 ```sh
 $ kubectl apply -f yaml/instance-good.yaml
 $ curl 0.0.0.0:8080/metrics
-# HELP handled_events handled events
-# TYPE handled_events counter
-handled_events 1
+# HELP foo_controller_reconcile_duration_seconds The duration of reconcile to complete in seconds
+# TYPE foo_controller_reconcile_duration_seconds histogram
+foo_controller_reconcile_duration_seconds_bucket{le="0.01"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="0.1"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="0.25"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="0.5"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="1"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="5"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="15"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="60"} 1
+foo_controller_reconcile_duration_seconds_bucket{le="+Inf"} 1
+foo_controller_reconcile_duration_seconds_sum 0.013
+foo_controller_reconcile_duration_seconds_count 1
+# HELP foo_controller_reconciliation_errors_total reconciliation errors
+# TYPE foo_controller_reconciliation_errors_total counter
+foo_controller_reconciliation_errors_total 0
+# HELP foo_controller_reconciliations_total reconciliations
+# TYPE foo_controller_reconciliations_total counter
+foo_controller_reconciliations_total 1
 $ curl 0.0.0.0:8080/
 {"last_event":"2019-07-17T22:31:37.591320068Z"}
 ```

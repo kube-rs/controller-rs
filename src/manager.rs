@@ -56,6 +56,7 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
+    ctx.get_ref().metrics.reconciliations.inc();
 
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
@@ -100,22 +101,23 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
         .with_label_values(&[])
         .observe(duration);
     //.observe_with_exemplar(duration, ex);
-    ctx.get_ref().metrics.handled_events.inc();
     info!("Reconciled Foo \"{}\" in {}", name, ns);
 
     // If no events were received, check back every 30 minutes
     Ok(Action::requeue(Duration::from_secs(30 * 60)))
 }
 
-fn error_policy(error: &Error, _ctx: Context<Data>) -> Action {
+fn error_policy(error: &Error, ctx: Context<Data>) -> Action {
     warn!("reconcile failed: {:?}", error);
+    ctx.get_ref().metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
 /// Metrics exposed on /metrics
 #[derive(Clone)]
 pub struct Metrics {
-    pub handled_events: IntCounter,
+    pub reconciliations: IntCounter,
+    pub failures: IntCounter,
     pub reconcile_duration: HistogramVec,
 }
 impl Metrics {
@@ -129,7 +131,8 @@ impl Metrics {
         .unwrap();
 
         Metrics {
-            handled_events: register_int_counter!("foo_controller_handled_events", "handled events").unwrap(),
+            reconciliations: register_int_counter!("foo_controller_reconciliations_total", "reconciliations").unwrap(),
+            failures: register_int_counter!("foo_controller_reconciliation_errors_total", "reconciliation errors").unwrap(),
             reconcile_duration: reconcile_histogram,
         }
     }
