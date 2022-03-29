@@ -131,8 +131,13 @@ impl Metrics {
         .unwrap();
 
         Metrics {
-            reconciliations: register_int_counter!("foo_controller_reconciliations_total", "reconciliations").unwrap(),
-            failures: register_int_counter!("foo_controller_reconciliation_errors_total", "reconciliation errors").unwrap(),
+            reconciliations: register_int_counter!("foo_controller_reconciliations_total", "reconciliations")
+                .unwrap(),
+            failures: register_int_counter!(
+                "foo_controller_reconciliation_errors_total",
+                "reconciliation errors"
+            )
+            .unwrap(),
             reconcile_duration: reconcile_histogram,
         }
     }
