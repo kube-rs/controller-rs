@@ -51,8 +51,8 @@ tonic = { version = "0.6.2", optional = true }
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.70.0"
+#version = "0.70.0"
 
 # testing new releases - ignore
-#git = "https://github.com/kube-rs/kube-rs.git"
-#rev = "a9d9975638dd0ec35a117eeea8afaaa5548edd89"
+git = "https://github.com/kube-rs/kube-rs.git"
+rev = "dd0b2585729dab5c140ab96dc35c00484cc992bc"
