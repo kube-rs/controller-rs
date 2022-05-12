@@ -59,3 +59,7 @@ forward-tempo:
 # forward http port from svc/promstack-grafana in monitoring
 forward-grafana:
   kubectl port-forward -n monitoring svc/promstack-grafana 8000:80
+
+# mode: makefile
+# End:
+# vim: set ft=make :
