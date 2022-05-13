@@ -83,9 +83,9 @@ async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Err
         recorder
             .publish(Event {
                 type_: EventType::Normal,
-                reason: "BadDocument".into(),
-                note: Some(format!("Sending `{}` to detention", name)),
-                action: "Correcting".into(),
+                reason: "HiddenDoc".into(),
+                note: Some(format!("Hiding `{}`", name)),
+                action: "Reconciling".into(),
                 secondary: None,
             })
             .await
