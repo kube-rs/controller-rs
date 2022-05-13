@@ -68,9 +68,9 @@ In either of the run scenarios, your app is listening on port `8080`, and it wil
 Try some of:
 
 ```sh
-kubectl apply -f yaml/instance-good.yaml
-kubectl delete doc good
-kubectl edit doc good # change info to contain bad
+kubectl apply -f yaml/instance-lorem.yaml
+kubectl delete doc lorem
+kubectl edit doc lorem # change hidden
 ```
 
 The reconciler will run and write the status object on every change. You should see results in the logs of the pod, or on the .status object outputs of `kubectl get doc -oyaml`.
@@ -79,7 +79,7 @@ The reconciler will run and write the status object on every change. You should 
 The sample web server exposes some example metrics and debug information you can inspect with `curl`.
 
 ```sh
-$ kubectl apply -f yaml/instance-good.yaml
+$ kubectl apply -f yaml/instance-lorem.yaml
 $ curl 0.0.0.0:8080/metrics
 # HELP doc_controller_reconcile_duration_seconds The duration of reconcile to complete in seconds
 # TYPE doc_controller_reconcile_duration_seconds histogram
@@ -107,6 +107,6 @@ $ curl 0.0.0.0:8080/
 The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prometheus.io/scrape`](https://github.com/prometheus-community/helm-charts/blob/b69e89e73326e8b504102a75d668dc4351fcdb78/charts/prometheus/values.yaml#L1608-L1650).
 
 ### Events
-The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc bad`.
+The example `reconciler` only checks the `.spec.hidden` bool. If it does, it updates the `.status` object to reflect whether or not the instance `is_hidden`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc samuel`.
 
 While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube-rs/blob/master/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube-rs/).

@@ -1,7 +1,7 @@
 apiVersion: kube.rs/v1
 kind: Document
 metadata:
-  name: bad
+  name: samuel
 spec:
   title: Samuel Ipsum
   hide: true

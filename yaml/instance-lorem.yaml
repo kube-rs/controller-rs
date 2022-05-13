@@ -1,7 +1,7 @@
 apiVersion: kube.rs/v1
 kind: Document
 metadata:
-  name: good
+  name: lorem
 spec:
   title: Lorem Ipsum
   hide: false
