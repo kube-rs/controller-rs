@@ -39,6 +39,10 @@ spec:
               properties:
                 hidden:
                   type: boolean
+                last_updated:
+                  format: date-time
+                  nullable: true
+                  type: string
               required:
                 - hidden
               type: object
