@@ -25,7 +25,7 @@ use tokio::{
 };
 use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, Span};
 
-/// Our Foo custom resource spec
+/// Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
 #[kube(status = "DocumentStatus", shortname = "doc")]
@@ -180,7 +180,7 @@ pub struct Manager {
     state: Arc<RwLock<State>>,
 }
 
-/// Example Manager that owns a Controller for Foo
+/// Example Manager that owns a Controller for Document
 impl Manager {
     /// Lifecycle initialization interface for app
     ///

@@ -3,9 +3,9 @@
 [![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
 https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes reference controller for a [`Foo` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/doc-crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
+A rust kubernetes reference controller for a [`Document` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
 
-The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
+The `Controller` object reconciles `Document` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
 - A Kubernetes cluster / k3d instance

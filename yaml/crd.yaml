@@ -21,7 +21,7 @@ spec:
           description: "Auto-generated derived type for DocumentSpec via `CustomResource`"
           properties:
             spec:
-              description: Our Foo custom resource spec
+              description: Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
               properties:
                 content:
                   type: string
