@@ -38,7 +38,6 @@ pub struct DocumentSpec {
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct DocumentStatus {
     hidden: bool,
-    last_updated: Option<DateTime<Utc>>,
 }
 
 impl Document {
@@ -60,55 +59,11 @@ struct Data {
     state: Arc<RwLock<State>>,
     /// Various prometheus metrics
     metrics: Metrics,
-    /// Cache for predicate
-    predicate_cache: Arc<RwLock<HashMap<ObjectRef<Document>, i64>>>,
 }
 
-
-use kube::runtime::reflector::ObjectRef;
-pub trait Predicate<K: Resource, V> {
-    fn cmp_update(&self, store: &mut HashMap<ObjectRef<K>, V>, obj: &K) -> bool;
-}
-
-// A simple getter from a &K to some optional value V will be able to compare against
-// a value in a HashMap<ObjectRef<K>, V>
-impl<K: Resource, V, F: (Fn(&K) -> Option<V>)> Predicate<K, V> for F
-where
-    K::DynamicType: Default + Eq + std::hash::Hash,
-    V: PartialEq,
-{
-    fn cmp_update(&self, cache: &mut HashMap<ObjectRef<K>, V>, obj: &K) -> bool {
-        if let Some(val) = (self)(obj) {
-            let key = ObjectRef::from_obj(obj);
-            let changed = if let Some(old) = cache.get(&key) {
-                *old != val // changed if key different
-            } else {
-                true // always changed if not in map
-            };
-            if let Some(old) = cache.get_mut(&key) {
-                *old = val;
-            } else {
-                cache.insert(key, val);
-            }
-            changed
-        } else {
-            true
-        }
-    }
-}
-
-// impl Predicate
-fn generation(x: &Document) -> Option<i64> {
-    x.meta().generation
-}
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
 async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> {
-    if !generation.cmp_update(&mut *ctx.predicate_cache.write().await, &doc) {
-        info!("ignoring generationally equivalent reconcile for {}", doc.name());
-        return Ok(Action::requeue(Duration::from_secs(30 * 60)));
-    }
-
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -142,7 +97,6 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> 
         "kind": "Document",
         "status": DocumentStatus {
             hidden: should_hide,
-            last_updated: Some(Utc::now()),
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
@@ -238,7 +192,6 @@ impl Manager {
             client: client.clone(),
             metrics: metrics.clone(),
             state: state.clone(),
-            predicate_cache: Arc::new(RwLock::new(HashMap::new())),
         });
 
         let docs = Api::<Document>::all(client);
