@@ -3,13 +3,13 @@
 [![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
 https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes reference controller for a [`Foo` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/foo-crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
+A rust kubernetes reference controller for a [`Foo` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/doc-crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
 
 The `Controller` object reconciles `Foo` instances when changes to it are detected, and writes to its .status object.
 
 ## Requirements
 - A Kubernetes cluster / k3d instance
-- The [CRD](./yaml/foo-crd.yaml)
+- The [CRD](yaml/crd.yaml)
 - Opentelemetry collector (**optional**)
 
 ### Cluster
@@ -24,7 +24,7 @@ export KUBECONFIG="$HOME/.kube/k3d"
 A default `k3d` setup is fastest for local dev due to its local registry.
 
 ### CRD
-Apply the CRD from [cached file](./yaml/foo-crd.yaml), or pipe it from `crdgen` (best if changing it):
+Apply the CRD from [cached file](yaml/crd.yaml), or pipe it from `crdgen` (best if changing it):
 
 ```sh
 cargo run --bin crdgen | kubectl apply -f -
@@ -54,8 +54,8 @@ Use either your locally built image or the one from dockerhub (using opentemetry
 
 ```sh
 kubectl apply -f yaml/deployment.yaml
-kubectl wait --for=condition=available deploy/foo-controller --timeout=20s
-kubectl port-forward service/foo-controller 8080:80
+kubectl wait --for=condition=available deploy/doc-controller --timeout=20s
+kubectl port-forward service/doc-controller 8080:80
 ```
 
 To build and deploy the image quickly, we recommend using [tilt](https://tilt.dev/), via `tilt up` instead.
@@ -63,17 +63,17 @@ To build and deploy the image quickly, we recommend using [tilt](https://tilt.de
 **NB**: namespace is assumed to be `default`. If you need a different namespace, you can replace `default` with whatever you want in the yaml and set the namespace in your current-context to get all the commands here to work.
 
 ## Usage
-In either of the run scenarios, your app is listening on port `8080`, and it will observe `foo` events.
+In either of the run scenarios, your app is listening on port `8080`, and it will observe `Document` events.
 
 Try some of:
 
 ```sh
 kubectl apply -f yaml/instance-good.yaml
-kubectl delete foo good
-kubectl edit foo good # change info to contain bad
+kubectl delete doc good
+kubectl edit doc good # change info to contain bad
 ```
 
-The reconciler will run and write the status object on every change. You should see results in the logs of the pod, or on the .status object outputs of `kubectl get foos -oyaml`.
+The reconciler will run and write the status object on every change. You should see results in the logs of the pod, or on the .status object outputs of `kubectl get doc -oyaml`.
 
 ### Webapp output
 The sample web server exposes some example metrics and debug information you can inspect with `curl`.
@@ -81,25 +81,25 @@ The sample web server exposes some example metrics and debug information you can
 ```sh
 $ kubectl apply -f yaml/instance-good.yaml
 $ curl 0.0.0.0:8080/metrics
-# HELP foo_controller_reconcile_duration_seconds The duration of reconcile to complete in seconds
-# TYPE foo_controller_reconcile_duration_seconds histogram
-foo_controller_reconcile_duration_seconds_bucket{le="0.01"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="0.1"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="0.25"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="0.5"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="1"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="5"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="15"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="60"} 1
-foo_controller_reconcile_duration_seconds_bucket{le="+Inf"} 1
-foo_controller_reconcile_duration_seconds_sum 0.013
-foo_controller_reconcile_duration_seconds_count 1
-# HELP foo_controller_reconciliation_errors_total reconciliation errors
-# TYPE foo_controller_reconciliation_errors_total counter
-foo_controller_reconciliation_errors_total 0
-# HELP foo_controller_reconciliations_total reconciliations
-# TYPE foo_controller_reconciliations_total counter
-foo_controller_reconciliations_total 1
+# HELP doc_controller_reconcile_duration_seconds The duration of reconcile to complete in seconds
+# TYPE doc_controller_reconcile_duration_seconds histogram
+doc_controller_reconcile_duration_seconds_bucket{le="0.01"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="0.1"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="0.25"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="0.5"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="1"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="5"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="15"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="60"} 1
+doc_controller_reconcile_duration_seconds_bucket{le="+Inf"} 1
+doc_controller_reconcile_duration_seconds_sum 0.013
+doc_controller_reconcile_duration_seconds_count 1
+# HELP doc_controller_reconciliation_errors_total reconciliation errors
+# TYPE doc_controller_reconciliation_errors_total counter
+doc_controller_reconciliation_errors_total 0
+# HELP doc_controller_reconciliations_total reconciliations
+# TYPE doc_controller_reconciliations_total counter
+doc_controller_reconciliations_total 1
 $ curl 0.0.0.0:8080/
 {"last_event":"2019-07-17T22:31:37.591320068Z"}
 ```
@@ -107,6 +107,6 @@ $ curl 0.0.0.0:8080/
 The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prometheus.io/scrape`](https://github.com/prometheus-community/helm-charts/blob/b69e89e73326e8b504102a75d668dc4351fcdb78/charts/prometheus/values.yaml#L1608-L1650).
 
 ### Events
-The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe foo bad`.
+The example `reconciler` only checks the `.spec.info` to see if it contains the word `bad`. If it does, it updates the `.status` object to reflect whether or not the instance `is_bad`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc bad`.
 
 While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube-rs/blob/master/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube-rs/).

@@ -1,5 +1,5 @@
 NAME := "controller"
-REPO := "kube-rs"
+ORG := "kube-rs"
 VERSION := `git rev-parse HEAD`
 SEMVER_VERSION := `grep version Cargo.toml | awk -F"\"" '{print $2}' | head -n 1`
 
@@ -8,16 +8,16 @@ default:
 
 # generate and install crd into the cluster
 install-crd:
-  cargo run --bin crdgen > yaml/foo-crd.yaml
-  kubectl apply -f yaml/foo-crd.yaml
+  cargo run --bin crdgen > yaml/crd.yaml
+  kubectl apply -f yaml/crd.yaml
 
 # run with opentelemetry
 run-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
+  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=debug,controller=debug cargo run --features=telemetry
 
 # run without opentelemetry
 run:
-  RUST_LOG=info,kube=trace,controller=debug cargo run
+  RUST_LOG=info,kube=debug,controller=debug cargo run
 
 # compile for musl (for docker image)
 compile features="":
@@ -32,22 +32,22 @@ compile features="":
 
 # docker build (requires compile step first)
 build:
-  docker build -t {{REPO}}/{{NAME}}:{{VERSION}} .
+  docker build -t {{ORG}}/{{NAME}}:{{VERSION}} .
 
 # retag the current git versioned docker tag as latest, and publish both
 tag-latest:
-  docker tag {{REPO}}/{{NAME}}:{{VERSION}} {{REPO}}/{{NAME}}:latest
-  docker push {{REPO}}/{{NAME}}:{{VERSION}}
-  docker push {{REPO}}/{{NAME}}:latest
+  docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:latest
+  docker push {{ORG}}/{{NAME}}:{{VERSION}}
+  docker push {{ORG}}/{{NAME}}:latest
 
 # retag the current git versioned docker tag as the current semver and publish
 tag-semver:
   #!/usr/bin/env bash
-  if curl -sSL https://registry.hub.docker.com/v1/repositories/{{REPO}}/{{NAME}}/tags | jq -r ".[].name" | grep -q {{SEMVER_VERSION}}; then
+  if curl -sSL https://registry.hub.docker.com/v1/ORGsitories/{{ORG}}/{{NAME}}/tags | jq -r ".[].name" | grep -q {{SEMVER_VERSION}}; then
     echo "Tag {{SEMVER_VERSION}} already exists - not publishing"
   else
-    docker tag {{REPO}}/{{NAME}}:{{VERSION}} {{REPO}}/{{NAME}}:{{SEMVER_VERSION}} .
-    docker push {{REPO}}/{{NAME}}:{{SEMVER_VERSION}}
+    docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:{{SEMVER_VERSION}} .
+    docker push {{ORG}}/{{NAME}}:{{SEMVER_VERSION}}
   fi
 
 # local helpers for debugging traces

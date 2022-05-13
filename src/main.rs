@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
     let telemetry = tracing_opentelemetry::layer().with_tracer(telemetry::init_tracer().await);
-    let logger = tracing_subscriber::fmt::layer().json();
+    let logger = tracing_subscriber::fmt::layer();
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
     .shutdown_timeout(5);
 
     tokio::select! {
-        _ = drainer => warn!("controller drained"),
+        _ = drainer => warn!("controller exited"),
         _ = server.run() => info!("actix exited"),
     }
     Ok(())

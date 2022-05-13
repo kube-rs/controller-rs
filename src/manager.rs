@@ -27,17 +27,28 @@ use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, 
 
 /// Our Foo custom resource spec
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(kind = "Foo", group = "clux.dev", version = "v1", namespaced)]
-#[kube(status = "FooStatus")]
-pub struct FooSpec {
-    name: String,
-    info: String,
+#[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
+#[kube(status = "DocumentStatus", shortname = "doc")]
+pub struct DocumentSpec {
+    title: String,
+    hide: bool,
+    content: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
-pub struct FooStatus {
-    is_bad: bool,
+pub struct DocumentStatus {
+    hidden: bool,
     //last_updated: Option<DateTime<Utc>>,
+}
+
+impl Document {
+    fn was_hidden(&self) -> bool {
+        if let Some(status) = &self.status {
+            status.hidden
+        } else {
+            false
+        }
+    }
 }
 
 // Context for our reconciler
@@ -51,8 +62,8 @@ struct Data {
     metrics: Metrics,
 }
 
-#[instrument(skip(ctx), fields(trace_id))]
-async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
+#[instrument(skip(ctx, doc), fields(trace_id))]
+async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Error> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -61,30 +72,18 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
     let client = ctx.get_ref().client.clone();
     ctx.get_ref().state.write().await.last_event = Utc::now();
     let reporter = ctx.get_ref().state.read().await.reporter.clone();
-    let recorder = Recorder::new(client.clone(), reporter, foo.object_ref(&()));
-    let name = ResourceExt::name(foo.as_ref());
-    let ns = ResourceExt::namespace(foo.as_ref()).expect("foo is namespaced");
-    let foos: Api<Foo> = Api::namespaced(client, &ns);
+    let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
+    let name = ResourceExt::name(doc.as_ref());
+    let ns = ResourceExt::namespace(doc.as_ref()).expect("doc is namespaced");
+    let docs: Api<Document> = Api::namespaced(client, &ns);
 
-    let new_status = Patch::Apply(json!({
-        "apiVersion": "clux.dev/v1",
-        "kind": "Foo",
-        "status": FooStatus {
-            is_bad: foo.spec.info.contains("bad"),
-            //last_updated: Some(Utc::now()),
-        }
-    }));
-    let ps = PatchParams::apply("cntrlr").force();
-    let _o = foos
-        .patch_status(&name, &ps, &new_status)
-        .await
-        .map_err(Error::KubeError)?;
-
-    if foo.spec.info.contains("bad") {
+    let should_hide = doc.spec.hide;
+    if doc.was_hidden() && should_hide {
+        // only send event the first time
         recorder
             .publish(Event {
                 type_: EventType::Normal,
-                reason: "BadFoo".into(),
+                reason: "BadDocument".into(),
                 note: Some(format!("Sending `{}` to detention", name)),
                 action: "Correcting".into(),
                 secondary: None,
@@ -92,6 +91,20 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
             .await
             .map_err(Error::KubeError)?;
     }
+    // always overwrite status object with what we saw
+    let new_status = Patch::Apply(json!({
+        "apiVersion": "kube.rs/v1",
+        "kind": "Document",
+        "status": DocumentStatus {
+            hidden: should_hide,
+            //last_updated: Some(Utc::now()),
+        }
+    }));
+    let ps = PatchParams::apply("cntrlr").force();
+    let _o = docs
+        .patch_status(&name, &ps, &new_status)
+        .await
+        .map_err(Error::KubeError)?;
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
     //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
@@ -101,7 +114,7 @@ async fn reconcile(foo: Arc<Foo>, ctx: Context<Data>) -> Result<Action, Error> {
         .with_label_values(&[])
         .observe(duration);
     //.observe_with_exemplar(duration, ex);
-    info!("Reconciled Foo \"{}\" in {}", name, ns);
+    info!("Reconciled Document \"{}\" in {}", name, ns);
 
     // If no events were received, check back every 30 minutes
     Ok(Action::requeue(Duration::from_secs(30 * 60)))
@@ -123,7 +136,7 @@ pub struct Metrics {
 impl Metrics {
     fn new() -> Self {
         let reconcile_histogram = register_histogram_vec!(
-            "foo_controller_reconcile_duration_seconds",
+            "doc_controller_reconcile_duration_seconds",
             "The duration of reconcile to complete in seconds",
             &[],
             vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]
@@ -131,10 +144,10 @@ impl Metrics {
         .unwrap();
 
         Metrics {
-            reconciliations: register_int_counter!("foo_controller_reconciliations_total", "reconciliations")
+            reconciliations: register_int_counter!("doc_controller_reconciliations_total", "reconciliations")
                 .unwrap(),
             failures: register_int_counter!(
-                "foo_controller_reconciliation_errors_total",
+                "doc_controller_reconciliation_errors_total",
                 "reconciliation errors"
             )
             .unwrap(),
@@ -155,7 +168,7 @@ impl State {
     fn new() -> Self {
         State {
             last_event: Utc::now(),
-            reporter: "foo-controller".into(),
+            reporter: "doc-controller".into(),
         }
     }
 }
@@ -183,15 +196,15 @@ impl Manager {
             state: state.clone(),
         });
 
-        let foos = Api::<Foo>::all(client);
+        let docs = Api::<Document>::all(client);
         // Ensure CRD is installed before loop-watching
-        let _r = foos
+        let _r = docs
             .list(&ListParams::default().limit(1))
             .await
             .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
         // All good. Start controller and return its future.
-        let drainer = Controller::new(foos, ListParams::default())
+        let drainer = Controller::new(docs, ListParams::default())
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
             .for_each(|_| futures::future::ready(()))
