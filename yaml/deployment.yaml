@@ -101,7 +101,7 @@ spec:
         - name: OPENTELEMETRY_ENDPOINT_URL
           value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         - name: RUST_LOG
-          value: trace
+          value: "info,kube=debug,controller=debug"
         readinessProbe:
           httpGet:
             path: /health
