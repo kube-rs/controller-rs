@@ -73,8 +73,8 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> 
     ctx.state.write().await.last_event = Utc::now();
     let reporter = ctx.state.read().await.reporter.clone();
     let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
-    let name = ResourceExt::name(doc.as_ref());
-    let ns = ResourceExt::namespace(doc.as_ref()).expect("doc is namespaced");
+    let name = doc.name();
+    let ns = doc.namespace().unwrap();
     let docs: Api<Document> = Api::namespaced(client, &ns);
 
     let should_hide = doc.spec.hide;

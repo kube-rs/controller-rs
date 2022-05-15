@@ -997,6 +997,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.72.0"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1008,6 +1009,7 @@ dependencies = [
 [[package]]
 name = "kube-client"
 version = "0.72.0"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
 dependencies = [
  "base64",
  "bytes",
@@ -1041,6 +1043,7 @@ dependencies = [
 [[package]]
 name = "kube-core"
 version = "0.72.0"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1057,6 +1060,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.72.0"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1068,6 +1072,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.72.0"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
 dependencies = [
  "ahash",
  "backoff",
