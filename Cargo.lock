@@ -982,9 +982,9 @@ dependencies = [
 
 [[package]]
 name = "k8s-openapi"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0489fc937cc7616a9abfa61bf39c250d7e32e1325ef028c8d9278dd24ea395b3"
+checksum = "d2ae2c04fcee6b01b04e3aadd56bb418932c8e0a9d8a93f48bc68c6bdcdb559d"
 dependencies = [
  "base64",
  "bytes",
@@ -997,7 +997,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1009,7 +1009,7 @@ dependencies = [
 [[package]]
 name = "kube-client"
 version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
 dependencies = [
  "base64",
  "bytes",
@@ -1043,7 +1043,7 @@ dependencies = [
 [[package]]
 name = "kube-core"
 version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1060,7 +1060,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1072,7 +1072,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=0886707869898138955c2ff6edb701b155ba1027#0886707869898138955c2ff6edb701b155ba1027"
+source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
 dependencies = [
  "ahash",
  "backoff",
