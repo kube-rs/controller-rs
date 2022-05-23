@@ -380,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "controller"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "actix-web",
  "chrono",
@@ -996,8 +996,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+version = "0.73.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60f11922081d37d1af75ae6b6b73b0b170ad169197c7a4a30e94e805ceff2a64"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1008,8 +1009,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+version = "0.73.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcd54b663fef0f0bdc75666821262cd8bee03ffa45ded04cee0f07d2ba0288f0"
 dependencies = [
  "base64",
  "bytes",
@@ -1042,8 +1044,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+version = "0.73.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1eef68b0918b741d0cb20a54ffc06b197770584fa417180af4b398f848a381e6"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1059,8 +1062,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+version = "0.73.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a92635af3079b229cc54fe6ba82349e1e23f1a53487f67fcbdf51db644b13eb"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1071,8 +1075,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.72.0"
-source = "git+https://github.com/kube-rs/kube-rs.git?rev=8dcd5c0865ad0a40520519032119fbe4ea5f85f7#8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+version = "0.73.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cce6c2a4ae58f1610bbf639280110035ab2ac624af112b5239851c793e1af0c0"
 dependencies = [
  "ahash",
  "backoff",
