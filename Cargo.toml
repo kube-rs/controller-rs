@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.12.1"
+version = "0.12.2"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2021"
 default-run = "controller"
@@ -29,7 +29,7 @@ telemetry = ["tonic", "opentelemetry-otlp"]
 actix-web = "4.0.1"
 futures = "0.3.21"
 tokio = { version = "1.18.2", features = ["macros", "rt-multi-thread"] }
-k8s-openapi = { version = "0.14.0", features = ["v1_22"], default-features = false }
+k8s-openapi = { version = "0.15.0", features = ["v1_23"], default-features = false }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 chrono = { version = "0.4.19", features = ["serde"] }
@@ -51,8 +51,9 @@ tonic = { version = "0.6.2", optional = true }
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.72.0"
+version = "0.73.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube-rs.git"
-#rev = "7715cabd4d1976493e6b8949471f283df927a79e"
+#rev = "8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
+#path = "../kube-rs/kube"

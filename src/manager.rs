@@ -6,7 +6,7 @@ use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     runtime::{
-        controller::{Action, Context, Controller},
+        controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
     },
     CustomResource, Resource,
@@ -38,7 +38,6 @@ pub struct DocumentSpec {
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct DocumentStatus {
     hidden: bool,
-    //last_updated: Option<DateTime<Utc>>,
 }
 
 impl Document {
@@ -62,19 +61,20 @@ struct Data {
     metrics: Metrics,
 }
 
+
 #[instrument(skip(ctx, doc), fields(trace_id))]
-async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Error> {
+async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
-    ctx.get_ref().metrics.reconciliations.inc();
+    ctx.metrics.reconciliations.inc();
 
-    let client = ctx.get_ref().client.clone();
-    ctx.get_ref().state.write().await.last_event = Utc::now();
-    let reporter = ctx.get_ref().state.read().await.reporter.clone();
+    let client = ctx.client.clone();
+    ctx.state.write().await.last_event = Utc::now();
+    let reporter = ctx.state.read().await.reporter.clone();
     let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
-    let name = ResourceExt::name(doc.as_ref());
-    let ns = ResourceExt::namespace(doc.as_ref()).expect("doc is namespaced");
+    let name = doc.name();
+    let ns = doc.namespace().unwrap();
     let docs: Api<Document> = Api::namespaced(client, &ns);
 
     let should_hide = doc.spec.hide;
@@ -97,7 +97,6 @@ async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Err
         "kind": "Document",
         "status": DocumentStatus {
             hidden: should_hide,
-            //last_updated: Some(Utc::now()),
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
@@ -108,8 +107,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Err
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
     //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
-    ctx.get_ref()
-        .metrics
+    ctx.metrics
         .reconcile_duration
         .with_label_values(&[])
         .observe(duration);
@@ -120,9 +118,9 @@ async fn reconcile(doc: Arc<Document>, ctx: Context<Data>) -> Result<Action, Err
     Ok(Action::requeue(Duration::from_secs(30 * 60)))
 }
 
-fn error_policy(error: &Error, ctx: Context<Data>) -> Action {
+fn error_policy(error: &Error, ctx: Arc<Data>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.get_ref().metrics.failures.inc();
+    ctx.metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -190,7 +188,7 @@ impl Manager {
         let client = Client::try_default().await.expect("create client");
         let metrics = Metrics::new();
         let state = Arc::new(RwLock::new(State::new()));
-        let context = Context::new(Data {
+        let context = Arc::new(Data {
             client: client.clone(),
             metrics: metrics.clone(),
             state: state.clone(),
