@@ -1,7 +1,6 @@
 use crate::{telemetry, Error, Result};
-use chrono::prelude::*;
+use chrono::{DateTime, Utc};
 use futures::{future::BoxFuture, FutureExt, StreamExt};
-use k8s_openapi::api::core::v1::ObjectReference;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
@@ -12,18 +11,18 @@ use kube::{
     CustomResource, Resource,
 };
 use prometheus::{
-    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramOpts,
-    HistogramVec, IntCounter,
+    default_registry, proto::MetricFamily, register_histogram_vec, register_int_counter, HistogramVec,
+    IntCounter,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tokio::{
     sync::RwLock,
     time::{Duration, Instant},
 };
-use tracing::{debug, error, event, field, info, instrument, trace, warn, Level, Span};
+use tracing::*;
 
 /// Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -42,11 +41,7 @@ pub struct DocumentStatus {
 
 impl Document {
     fn was_hidden(&self) -> bool {
-        if let Some(status) = &self.status {
-            status.hidden
-        } else {
-            false
-        }
+        self.status.as_ref().map(|s| s.hidden).unwrap_or(false)
     }
 }
 

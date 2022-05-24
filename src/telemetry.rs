@@ -1,7 +1,5 @@
 use opentelemetry::trace::TraceId;
 
-use crate::{Error, Result};
-
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
 pub fn get_trace_id() -> TraceId {
     use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
