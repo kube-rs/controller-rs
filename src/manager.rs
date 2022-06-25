@@ -26,7 +26,7 @@ use tokio::{
 };
 use tracing::*;
 
-static DOCUMENT_FINALIZER: &'static str = "finalizer.document.io";
+static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
 /// Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -73,12 +73,12 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
 
     let action = finalizer(&docs, DOCUMENT_FINALIZER, doc, |event| async {
         match event {
-            FinalizerEvent::Apply(doc) => do_reconcile(&docs, doc, ctx.clone()).await,
-            FinalizerEvent::Cleanup(doc) => clean_up(doc, ctx.clone()).await,
+            FinalizerEvent::Apply(doc) => doc.reconcile(ctx.clone()).await,
+            FinalizerEvent::Cleanup(doc) => doc.cleanup(ctx.clone()).await,
         }
     })
     .await
-    .map_err(Error::KubeError);
+    .map_err(Error::FinalizerError);
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
     //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
@@ -92,68 +92,70 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
     action
 }
 
-async fn do_reconcile(
-    docs: &Api<Document>,
-    doc: Arc<Document>,
-    ctx: Arc<Data>,
-) -> Result<Action, kube::Error> {
-    let client = ctx.client.clone();
-    ctx.state.write().await.last_event = Utc::now();
-    let reporter = ctx.state.read().await.reporter.clone();
-    let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
-    let name = doc.name();
-
-    let should_hide = doc.spec.hide;
-    if doc.was_hidden() && should_hide {
-        // only send event the first time
-        recorder
-            .publish(Event {
-                type_: EventType::Normal,
-                reason: "HiddenDoc".into(),
-                note: Some(format!("Hiding `{}`", name)),
-                action: "Reconciling".into(),
-                secondary: None,
-            })
-            .await?;
-    }
-    // always overwrite status object with what we saw
-    let new_status = Patch::Apply(json!({
-        "apiVersion": "kube.rs/v1",
-        "kind": "Document",
-        "status": DocumentStatus {
-            hidden: should_hide,
-        }
-    }));
-    let ps = PatchParams::apply("cntrlr").force();
-    let _o = docs.patch_status(&name, &ps, &new_status).await?;
-
-    // If no events were received, check back every 30 minutes
-    Ok(Action::requeue(Duration::from_secs(30 * 60)))
-}
-
 fn error_policy(error: &Error, ctx: Arc<Data>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
-async fn clean_up(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, kube::Error> {
-    let client = ctx.client.clone();
-    ctx.state.write().await.last_event = Utc::now();
-    let reporter = ctx.state.read().await.reporter.clone();
-    let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
+impl Document {
+    // Reconcile (for non-finalizer related changes)
+    async fn reconcile(&self, ctx: Arc<Data>) -> Result<Action, kube::Error> {
+        let client = ctx.client.clone();
+        ctx.state.write().await.last_event = Utc::now();
+        let reporter = ctx.state.read().await.reporter.clone();
+        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
+        let name = self.name();
+        let ns = self.namespace().unwrap();
+        let docs: Api<Document> = Api::namespaced(client, &ns);
 
-    recorder
-        .publish(Event {
-            type_: EventType::Normal,
-            reason: "DeleteDoc".into(),
-            note: Some(format!("Delete `{}`", doc.name())),
-            action: "Reconciling".into(),
-            secondary: None,
-        })
-        .await?;
+        let should_hide = self.spec.hide;
+        if self.was_hidden() && should_hide {
+            // only send event the first time
+            recorder
+                .publish(Event {
+                    type_: EventType::Normal,
+                    reason: "HiddenDoc".into(),
+                    note: Some(format!("Hiding `{}`", name)),
+                    action: "Reconciling".into(),
+                    secondary: None,
+                })
+                .await?;
+        }
+        // always overwrite status object with what we saw
+        let new_status = Patch::Apply(json!({
+            "apiVersion": "kube.rs/v1",
+            "kind": "Document",
+            "status": DocumentStatus {
+                hidden: should_hide,
+            }
+        }));
+        let ps = PatchParams::apply("cntrlr").force();
+        let _o = docs.patch_status(&name, &ps, &new_status).await?;
 
-    Ok(Action::await_change())
+        // If no events were received, check back every 30 minutes
+        Ok(Action::requeue(Duration::from_secs(30 * 60)))
+    }
+
+    // Reconcile with finalize cleanup (the object was deleted)
+    async fn cleanup(&self, ctx: Arc<Data>) -> Result<Action, kube::Error> {
+        let client = ctx.client.clone();
+        ctx.state.write().await.last_event = Utc::now();
+        let reporter = ctx.state.read().await.reporter.clone();
+        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
+
+        recorder
+            .publish(Event {
+                type_: EventType::Normal,
+                reason: "DeleteDoc".into(),
+                note: Some(format!("Delete `{}`", self.name())),
+                action: "Reconciling".into(),
+                secondary: None,
+            })
+            .await?;
+
+        Ok(Action::await_change())
+    }
 }
 
 /// Metrics exposed on /metrics

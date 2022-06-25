@@ -5,7 +5,7 @@ https://hub.docker.com/r/clux/controller/tags/)
 
 A rust kubernetes reference controller for a [`Document` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
 
-The `Controller` object reconciles `Document` instances when changes to it are detected, and writes to its .status object.
+The `Controller` object reconciles `Document` instances when changes to it are detected, writes to its .status object, creates associated events, and uses finalizers for guaranteed delete handling.
 
 ## Requirements
 - A Kubernetes cluster / k3d instance
