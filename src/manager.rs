@@ -7,6 +7,8 @@ use kube::{
     runtime::{
         controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
+        finalizer,
+        finalizer::Event as FinalizerEvent,
     },
     CustomResource, Resource,
 };
@@ -23,6 +25,8 @@ use tokio::{
     time::{Duration, Instant},
 };
 use tracing::*;
+
+static DOCUMENT_FINALIZER: &'static str = "finalizer.document.io";
 
 /// Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -56,21 +60,48 @@ struct Data {
     metrics: Metrics,
 }
 
-
 #[instrument(skip(ctx, doc), fields(trace_id))]
-async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> {
+async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
     ctx.metrics.reconciliations.inc();
+    let client = ctx.client.clone();
+    let name = doc.name();
+    let ns = doc.namespace().unwrap();
+    let docs: Api<Document> = Api::namespaced(client, &ns);
 
+    let action = finalizer(&docs, DOCUMENT_FINALIZER, doc, |event| async {
+        match event {
+            FinalizerEvent::Apply(doc) => do_reconcile(&docs, doc, ctx.clone()).await,
+            FinalizerEvent::Cleanup(doc) => clean_up(doc, ctx.clone()).await,
+        }
+    })
+    .await
+    .map_err(Error::KubeError);
+
+    let duration = start.elapsed().as_millis() as f64 / 1000.0;
+    //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
+    ctx.metrics
+        .reconcile_duration
+        .with_label_values(&[])
+        .observe(duration);
+    //.observe_with_exemplar(duration, ex);
+    info!("Reconciled Document \"{}\" in {}", name, ns);
+
+    action
+}
+
+async fn do_reconcile(
+    docs: &Api<Document>,
+    doc: Arc<Document>,
+    ctx: Arc<Data>,
+) -> Result<Action, kube::Error> {
     let client = ctx.client.clone();
     ctx.state.write().await.last_event = Utc::now();
     let reporter = ctx.state.read().await.reporter.clone();
     let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
     let name = doc.name();
-    let ns = doc.namespace().unwrap();
-    let docs: Api<Document> = Api::namespaced(client, &ns);
 
     let should_hide = doc.spec.hide;
     if doc.was_hidden() && should_hide {
@@ -83,8 +114,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> 
                 action: "Reconciling".into(),
                 secondary: None,
             })
-            .await
-            .map_err(Error::KubeError)?;
+            .await?;
     }
     // always overwrite status object with what we saw
     let new_status = Patch::Apply(json!({
@@ -95,19 +125,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, Error> 
         }
     }));
     let ps = PatchParams::apply("cntrlr").force();
-    let _o = docs
-        .patch_status(&name, &ps, &new_status)
-        .await
-        .map_err(Error::KubeError)?;
-
-    let duration = start.elapsed().as_millis() as f64 / 1000.0;
-    //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
-    ctx.metrics
-        .reconcile_duration
-        .with_label_values(&[])
-        .observe(duration);
-    //.observe_with_exemplar(duration, ex);
-    info!("Reconciled Document \"{}\" in {}", name, ns);
+    let _o = docs.patch_status(&name, &ps, &new_status).await?;
 
     // If no events were received, check back every 30 minutes
     Ok(Action::requeue(Duration::from_secs(30 * 60)))
@@ -117,6 +135,25 @@ fn error_policy(error: &Error, ctx: Arc<Data>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
+}
+
+async fn clean_up(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action, kube::Error> {
+    let client = ctx.client.clone();
+    ctx.state.write().await.last_event = Utc::now();
+    let reporter = ctx.state.read().await.reporter.clone();
+    let recorder = Recorder::new(client.clone(), reporter, doc.object_ref(&()));
+
+    recorder
+        .publish(Event {
+            type_: EventType::Normal,
+            reason: "DeleteDoc".into(),
+            note: Some(format!("Delete `{}`", doc.name())),
+            action: "Reconciling".into(),
+            secondary: None,
+        })
+        .await?;
+
+    Ok(Action::await_change())
 }
 
 /// Metrics exposed on /metrics

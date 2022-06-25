@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Kube Api Error: {0}")]
-    KubeError(#[source] kube::Error),
+    KubeError(#[source] kube::runtime::finalizer::Error<kube::Error>),
 
     #[error("SerializationError: {0}")]
     SerializationError(#[source] serde_json::Error),
