@@ -45,10 +45,6 @@ prometheus = "0.13.0"
 tonic = { version = "0.6.2", optional = true }
 thiserror = "1.0.31"
 
-# exemplar support (broken atm)
-#prometheus = { git = "https://github.com/clux/rust-prometheus.git", rev = "c9f7ea9652e27cd2d872937c5efbe72f20db0d5e" }
-#prometheus = { path = "../rust-prometheus" }
-
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
 version = "0.73.0"
