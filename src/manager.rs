@@ -7,8 +7,7 @@ use kube::{
     runtime::{
         controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
-        finalizer,
-        finalizer::Event as FinalizerEvent,
+        finalizer::{finalizer, Event as Finalizer},
     },
     CustomResource, Resource,
 };
@@ -73,22 +72,19 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
 
     let action = finalizer(&docs, DOCUMENT_FINALIZER, doc, |event| async {
         match event {
-            FinalizerEvent::Apply(doc) => doc.reconcile(ctx.clone()).await,
-            FinalizerEvent::Cleanup(doc) => doc.cleanup(ctx.clone()).await,
+            Finalizer::Apply(doc) => doc.reconcile(ctx.clone()).await,
+            Finalizer::Cleanup(doc) => doc.cleanup(ctx.clone()).await,
         }
     })
     .await
     .map_err(Error::FinalizerError);
 
     let duration = start.elapsed().as_millis() as f64 / 1000.0;
-    //let ex = Exemplar::new_with_labels(duration, HashMap::from([("trace_id".to_string(), trace_id)]);
     ctx.metrics
         .reconcile_duration
         .with_label_values(&[])
         .observe(duration);
-    //.observe_with_exemplar(duration, ex);
     info!("Reconciled Document \"{}\" in {}", name, ns);
-
     action
 }
 
