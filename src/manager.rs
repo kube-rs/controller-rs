@@ -66,7 +66,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
     let start = Instant::now();
     ctx.metrics.reconciliations.inc();
     let client = ctx.client.clone();
-    let name = doc.name();
+    let name = doc.name_any();
     let ns = doc.namespace().unwrap();
     let docs: Api<Document> = Api::namespaced(client, &ns);
 
@@ -101,7 +101,7 @@ impl Document {
         ctx.state.write().await.last_event = Utc::now();
         let reporter = ctx.state.read().await.reporter.clone();
         let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
-        let name = self.name();
+        let name = self.name_any();
         let ns = self.namespace().unwrap();
         let docs: Api<Document> = Api::namespaced(client, &ns);
 
@@ -144,7 +144,7 @@ impl Document {
             .publish(Event {
                 type_: EventType::Normal,
                 reason: "DeleteDoc".into(),
-                note: Some(format!("Delete `{}`", self.name())),
+                note: Some(format!("Delete `{}`", self.name_any())),
                 action: "Reconciling".into(),
                 secondary: None,
             })
