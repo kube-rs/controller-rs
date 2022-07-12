@@ -27,7 +27,9 @@ use tracing::*;
 
 static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
-/// Our document properties that will be wrapped in a Kubernetes resource as a Spec struct
+/// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
+///
+/// This provides a hook for generating the CRD yaml (in crdgen.rs)
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
 #[kube(status = "DocumentStatus", shortname = "doc")]
@@ -37,6 +39,7 @@ pub struct DocumentSpec {
     content: String,
 }
 
+/// The status object of `Document`
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct DocumentStatus {
     hidden: bool,
@@ -50,17 +53,17 @@ impl Document {
 
 // Context for our reconciler
 #[derive(Clone)]
-struct Data {
-    /// kubernetes client
+struct Context {
+    /// Kubernetes client
     client: Client,
-    /// In memory state
-    state: Arc<RwLock<State>>,
-    /// Various prometheus metrics
+    /// Diagnostics read by the web server
+    diagnostics: Arc<RwLock<Diagnostics>>,
+    /// Prometheus metrics
     metrics: Metrics,
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
-async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
+async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let start = Instant::now();
@@ -88,7 +91,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>) -> Result<Action> {
     action
 }
 
-fn error_policy(error: &Error, ctx: Arc<Data>) -> Action {
+fn error_policy(error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
@@ -96,10 +99,10 @@ fn error_policy(error: &Error, ctx: Arc<Data>) -> Action {
 
 impl Document {
     // Reconcile (for non-finalizer related changes)
-    async fn reconcile(&self, ctx: Arc<Data>) -> Result<Action, kube::Error> {
+    async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action, kube::Error> {
         let client = ctx.client.clone();
-        ctx.state.write().await.last_event = Utc::now();
-        let reporter = ctx.state.read().await.reporter.clone();
+        ctx.diagnostics.write().await.last_event = Utc::now();
+        let reporter = ctx.diagnostics.read().await.reporter.clone();
         let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
         let name = self.name_any();
         let ns = self.namespace().unwrap();
@@ -129,15 +132,15 @@ impl Document {
         let ps = PatchParams::apply("cntrlr").force();
         let _o = docs.patch_status(&name, &ps, &new_status).await?;
 
-        // If no events were received, check back every 30 minutes
-        Ok(Action::requeue(Duration::from_secs(30 * 60)))
+        // If no events were received, check back every 5 minutes
+        Ok(Action::requeue(Duration::from_secs(5 * 60)))
     }
 
     // Reconcile with finalize cleanup (the object was deleted)
-    async fn cleanup(&self, ctx: Arc<Data>) -> Result<Action, kube::Error> {
+    async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action, kube::Error> {
         let client = ctx.client.clone();
-        ctx.state.write().await.last_event = Utc::now();
-        let reporter = ctx.state.read().await.reporter.clone();
+        ctx.diagnostics.write().await.last_event = Utc::now();
+        let reporter = ctx.diagnostics.read().await.reporter.clone();
         let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
 
         recorder
@@ -154,7 +157,7 @@ impl Document {
     }
 }
 
-/// Metrics exposed on /metrics
+/// Prometheus Metrics to be exposed on /metrics
 #[derive(Clone)]
 pub struct Metrics {
     pub reconciliations: IntCounter,
@@ -184,17 +187,17 @@ impl Metrics {
     }
 }
 
-/// In-memory reconciler state exposed on /
+/// Diagnostics to be exposed by the web server
 #[derive(Clone, Serialize)]
-pub struct State {
+pub struct Diagnostics {
     #[serde(deserialize_with = "from_ts")]
     pub last_event: DateTime<Utc>,
     #[serde(skip)]
     pub reporter: Reporter,
 }
-impl State {
+impl Diagnostics {
     fn new() -> Self {
-        State {
+        Self {
             last_event: Utc::now(),
             reporter: "doc-controller".into(),
         }
@@ -204,8 +207,8 @@ impl State {
 /// Data owned by the Manager
 #[derive(Clone)]
 pub struct Manager {
-    /// In memory state
-    state: Arc<RwLock<State>>,
+    /// Diagnostics populated by the reconciler
+    diagnostics: Arc<RwLock<Diagnostics>>,
 }
 
 /// Example Manager that owns a Controller for Document
@@ -217,11 +220,11 @@ impl Manager {
     pub async fn new() -> (Self, BoxFuture<'static, ()>) {
         let client = Client::try_default().await.expect("create client");
         let metrics = Metrics::new();
-        let state = Arc::new(RwLock::new(State::new()));
-        let context = Arc::new(Data {
+        let diagnostics = Arc::new(RwLock::new(Diagnostics::new()));
+        let context = Arc::new(Context {
             client: client.clone(),
             metrics: metrics.clone(),
-            state: state.clone(),
+            diagnostics: diagnostics.clone(),
         });
 
         let docs = Api::<Document>::all(client);
@@ -232,13 +235,13 @@ impl Manager {
             .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
         // All good. Start controller and return its future.
-        let drainer = Controller::new(docs, ListParams::default())
+        let controller = Controller::new(docs, ListParams::default())
             .run(reconcile, error_policy, context)
             .filter_map(|x| async move { std::result::Result::ok(x) })
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (Self { state }, drainer)
+        (Self { diagnostics }, controller)
     }
 
     /// Metrics getter
@@ -247,7 +250,7 @@ impl Manager {
     }
 
     /// State getter
-    pub async fn state(&self) -> State {
-        self.state.read().await.clone()
+    pub async fn diagnostics(&self) -> Diagnostics {
+        self.diagnostics.read().await.clone()
     }
 }

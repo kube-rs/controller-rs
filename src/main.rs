@@ -26,8 +26,8 @@ async fn health(_: HttpRequest) -> impl Responder {
 
 #[get("/")]
 async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
-    let state = c.state().await;
-    HttpResponse::Ok().json(&state)
+    let d = c.diagnostics().await;
+    HttpResponse::Ok().json(&d)
 }
 
 #[tokio::main]
@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // Start kubernetes controller
-    let (manager, drainer) = Manager::new().await;
+    let (manager, controller) = Manager::new().await;
 
     // Start web server
     let server = HttpServer::new(move || {
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
     .shutdown_timeout(5);
 
     tokio::select! {
-        _ = drainer => warn!("controller exited"),
+        _ = controller => warn!("controller exited"),
         _ = server.run() => info!("actix exited"),
     }
     Ok(())
