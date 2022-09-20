@@ -26,16 +26,16 @@ default = []
 telemetry = ["tonic", "opentelemetry-otlp"]
 
 [dependencies]
-actix-web = "4.1.0"
-futures = "0.3.21"
+actix-web = "4.2.1"
+futures = "0.3.24"
 tokio = { version = "1.19.2", features = ["macros", "rt-multi-thread"] }
-k8s-openapi = { version = "0.15.0", features = ["v1_23"], default-features = false }
+k8s-openapi = { version = "0.16.0", features = ["v1_25"], default-features = false }
 schemars = { version = "0.8.10", features = ["chrono"] }
-serde = { version = "1.0.138", features = ["derive"] }
-serde_json = "1.0.82"
-serde_yaml = "0.8.25"
-prometheus = "0.13.1"
-chrono = { version = "0.4.19", features = ["serde"] }
+serde = { version = "1.0.144", features = ["derive"] }
+serde_json = "1.0.85"
+serde_yaml = "0.9.13"
+prometheus = "0.13.2"
+chrono = { version = "0.4.22", features = ["serde"] }
 tracing = "0.1.35"
 tracing-subscriber = { version = "0.3.12", features = ["json", "env-filter"] }
 tracing-opentelemetry = "0.17.4"
@@ -43,13 +43,13 @@ opentelemetry = { version = "0.17.0", features = ["trace", "rt-tokio"] }
 opentelemetry-otlp = { version = "0.10.0", features = ["tokio"], optional = true }
 # Can't upgrade this until opentelemetry-otlp upgrades it (it's in their master)
 tonic = { version = "0.6.2", optional = true }
-thiserror = "1.0.31"
+thiserror = "1.0.35"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.74.0"
+#version = "0.74.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube-rs.git"
 #rev = "8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
-#path = "../kube-rs/kube"
+path = "../kube-rs/kube"

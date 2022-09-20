@@ -91,7 +91,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     action
 }
 
-fn error_policy(error: &Error, ctx: Arc<Context>) -> Action {
+fn error_policy(_doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.failures.inc();
     Action::requeue(Duration::from_secs(5 * 60))
