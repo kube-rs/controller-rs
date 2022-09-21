@@ -83,7 +83,7 @@ jobs:
               --mount type=bind,source=${{ github.workspace }},target=/volume \
               --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
               --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:nightly-2022-09-21 \
+              clux/muslrust:stable \
               cargo build --release
           cp target/x86_64-unknown-linux-musl/release/controller .
 
@@ -106,7 +106,7 @@ jobs:
               --mount type=bind,source=${{ github.workspace }},target=/volume \
               --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
               --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:nightly-2022-09-21 \
+              clux/muslrust:stable \
               cargo build --features=telemetry --release
           cp target/x86_64-unknown-linux-musl/release/controller .
 
