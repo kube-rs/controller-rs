@@ -46,7 +46,7 @@ thiserror = "1.0.35"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-#version = "0.75.0"
+version = "0.75.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube-rs.git"
