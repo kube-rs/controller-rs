@@ -75,6 +75,17 @@ jobs:
             target
           key: musl-cargo-${{ hashFiles('**/Cargo.toml') }}
 
+
+      - name: Check we got protoc
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              which protoc
+
       - name: Compile base features
         run: |
           mkdir -p ~/.cargo/{git,registry}
