@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install protoc
-        run: apt install -y protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
       - name: Prepare image tags
         id: prep
         run: |
@@ -127,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install protoc
-        run: apt install -y protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
