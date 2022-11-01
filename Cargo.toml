@@ -1,6 +1,6 @@
 [package]
 name = "controller"
-version = "0.12.3"
+version = "0.12.4"
 authors = ["clux <sszynrae@gmail.com>"]
 edition = "2021"
 default-run = "controller"
@@ -46,7 +46,7 @@ thiserror = "1.0.35"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.75.0"
+version = "0.76.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube-rs.git"
