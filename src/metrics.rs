@@ -1,6 +1,9 @@
-use prometheus::{register_int_counter, register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounter, IntCounterVec};
+use crate::{Document, Error};
 use kube::ResourceExt;
-use crate::{Error, Document};
+use prometheus::{
+    register_histogram_vec, register_int_counter, register_int_counter_vec, HistogramVec, IntCounter,
+    IntCounterVec,
+};
 use tokio::time::Instant;
 
 #[derive(Clone)]
@@ -23,12 +26,14 @@ impl Metrics {
             "doc_controller_reconciliation_errors_total",
             "reconciliation errors",
             &["instance", "error"]
-        ).unwrap();
-        let reconciliations = register_int_counter!("doc_controller_reconciliations_total", "reconciliations").unwrap();
+        )
+        .unwrap();
+        let reconciliations =
+            register_int_counter!("doc_controller_reconciliations_total", "reconciliations").unwrap();
         Metrics {
             reconciliations,
             failures,
-            reconcile_duration
+            reconcile_duration,
         }
     }
 }
@@ -58,8 +63,6 @@ impl Drop for ReconcileMeasurer {
     fn drop(&mut self) {
         #[allow(clippy::cast_precision_loss)]
         let duration = self.start.elapsed().as_millis() as f64 / 1000.0;
-        self.metric
-            .with_label_values(&[])
-            .observe(duration);
+        self.metric.with_label_values(&[]).observe(duration);
     }
 }

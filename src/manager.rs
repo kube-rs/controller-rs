@@ -1,4 +1,4 @@
-use crate::{telemetry, Metrics, Error, Result};
+use crate::{telemetry, Error, Metrics, Result};
 use chrono::{DateTime, Utc};
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{

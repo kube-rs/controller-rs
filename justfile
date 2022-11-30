@@ -19,6 +19,10 @@ run-telemetry:
 run:
   RUST_LOG=info,kube=debug,controller=debug cargo run
 
+# format with nightly rustfmt
+fmt:
+  cargo +nightly fmt
+
 # compile for musl (for docker image)
 compile features="":
   #!/usr/bin/env bash
