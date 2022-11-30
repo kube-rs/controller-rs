@@ -10,6 +10,12 @@ pub enum Error {
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+impl Error {
+    pub fn metric_label(&self) -> String {
+        format!("{}", self).to_lowercase()
+    }
+}
+
 /// State machinery for kube, as exposeable to actix
 pub mod manager;
 pub use manager::Manager;
@@ -19,3 +25,7 @@ pub use manager::Document;
 
 /// Log and trace integrations
 pub mod telemetry;
+
+/// Metrics
+mod metrics;
+pub use metrics::Metrics;
