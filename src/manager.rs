@@ -70,7 +70,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
         }
     })
     .await
-    .map_err(Error::FinalizerError)
+    .map_err(|e| Error::FinalizerError(Box::new(e)))
 }
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
@@ -81,7 +81,7 @@ fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action 
 
 impl Document {
     // Reconcile (for non-finalizer related changes)
-    async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action, kube::Error> {
+    async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
         ctx.diagnostics.write().await.last_event = Utc::now();
         let reporter = ctx.diagnostics.read().await.reporter.clone();
@@ -101,7 +101,11 @@ impl Document {
                     action: "Reconciling".into(),
                     secondary: None,
                 })
-                .await?;
+                .await
+                .map_err(Error::KubeError)?;
+        }
+        if name == "illegal" {
+            return Err(Error::IllegalDocument); // error names show up in metrics
         }
         // always overwrite status object with what we saw
         let new_status = Patch::Apply(json!({
@@ -112,14 +116,17 @@ impl Document {
             }
         }));
         let ps = PatchParams::apply("cntrlr").force();
-        let _o = docs.patch_status(&name, &ps, &new_status).await?;
+        let _o = docs
+            .patch_status(&name, &ps, &new_status)
+            .await
+            .map_err(Error::KubeError)?;
 
         // If no events were received, check back every 5 minutes
         Ok(Action::requeue(Duration::from_secs(5 * 60)))
     }
 
     // Reconcile with finalize cleanup (the object was deleted)
-    async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action, kube::Error> {
+    async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
         ctx.diagnostics.write().await.last_event = Utc::now();
         let reporter = ctx.diagnostics.read().await.reporter.clone();
@@ -133,7 +140,8 @@ impl Document {
                 action: "Reconciling".into(),
                 secondary: None,
             })
-            .await?;
+            .await
+            .map_err(Error::KubeError)?;
 
         Ok(Action::await_change())
     }

@@ -13,8 +13,8 @@ pub struct Metrics {
     pub reconcile_duration: HistogramVec,
 }
 
-impl Metrics {
-    pub fn default() -> Self {
+impl Default for Metrics {
+    fn default() -> Self {
         let reconcile_duration = register_histogram_vec!(
             "doc_controller_reconcile_duration_seconds",
             "The duration of reconcile to complete in seconds",
