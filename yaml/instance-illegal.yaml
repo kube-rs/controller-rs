@@ -1,0 +1,9 @@
+apiVersion: kube.rs/v1
+kind: Document
+metadata:
+  name: illegal
+spec:
+  title: Breaking the law
+  hide: false
+  content: |
+    This document will cause the reconcile fn to return an Err which will be visible in the metrics of the controller.
