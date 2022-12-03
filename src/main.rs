@@ -1,5 +1,5 @@
 #![allow(unused_imports, unused_variables)]
-pub use controller::*;
+pub use controller::{Result, State};
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
@@ -50,12 +50,12 @@ async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // Start kubernetes controller
-    let (State, controller) = State::new().await;
+    let (state, controller) = State::new().await;
 
     // Start web server
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(State.clone()))
+            .app_data(Data::new(state.clone()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)

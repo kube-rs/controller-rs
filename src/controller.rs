@@ -85,7 +85,7 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), &self);
+        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), self);
         let ns = self.namespace().unwrap();
         let name = self.name_any();
         let docs: Api<Document> = Api::namespaced(client, &ns);
@@ -127,7 +127,7 @@ impl Document {
 
     // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), &self);
+        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), self);
         // Document doesn't have dependencies in this example case, so we just publish an event
         recorder
             .publish(Event {
