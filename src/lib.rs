@@ -25,11 +25,11 @@ impl Error {
 }
 
 /// State machinery for kube, as exposeable to actix
-pub mod manager;
-pub use manager::Manager;
+pub mod controller;
+pub use controller::State;
 
 /// Controller types + CRD
-pub use manager::*;
+pub use controller::*;
 
 /// Log and trace integrations
 pub mod telemetry;

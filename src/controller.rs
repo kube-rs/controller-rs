@@ -165,28 +165,28 @@ impl Diagnostics {
     }
 }
 
-/// Data owned by the Manager
+/// State shared between the controller and the web server
 #[derive(Clone, Default)]
-pub struct Manager {
+pub struct State {
     /// Diagnostics populated by the reconciler
     diagnostics: Arc<RwLock<Diagnostics>>,
     /// Metrics registry
     registry: prometheus::Registry,
 }
 
-/// Example Manager that owns a Controller for Document
-impl Manager {
+/// State is in charge of starting the controller and tracking shared state
+impl State {
     /// Lifecycle initialization interface for app
     ///
-    /// This returns a `Manager` that drives a `Controller` + a future to be awaited
-    /// It is up to `main` to wait for the controller stream.
+    /// This returns the shared State + future that drives a `Controller`
+    /// It is up to `main` to await for the controller stream.
     pub async fn new() -> (Self, BoxFuture<'static, ()>) {
         let client = Client::try_default().await.expect("create client");
-        let manager = Manager::default();
+        let state = State::default();
         let context = Arc::new(Context {
             client: client.clone(),
-            metrics: Metrics::default().register(&manager.registry).unwrap(),
-            diagnostics: manager.diagnostics.clone(),
+            metrics: Metrics::default().register(&state.registry).unwrap(),
+            diagnostics: state.diagnostics.clone(),
         });
 
         let docs = Api::<Document>::all(client);
@@ -203,7 +203,7 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (manager, controller)
+        (state, controller)
     }
 
     /// Metrics getter
@@ -217,6 +217,7 @@ impl Manager {
     }
 }
 
+// Integration tests relying on fixtures.rs and its primitive apiserver mocks
 #[cfg(test)]
 mod test {
     use super::{error_policy, reconcile, Context, Document};

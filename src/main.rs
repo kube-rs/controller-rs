@@ -11,7 +11,7 @@ use actix_web::{
 };
 
 #[get("/metrics")]
-async fn metrics(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
     let metrics = c.metrics();
     let encoder = TextEncoder::new();
     let mut buffer = vec![];
@@ -25,7 +25,7 @@ async fn health(_: HttpRequest) -> impl Responder {
 }
 
 #[get("/")]
-async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+async fn index(c: Data<State>, _req: HttpRequest) -> impl Responder {
     let d = c.diagnostics().await;
     HttpResponse::Ok().json(&d)
 }
@@ -50,12 +50,12 @@ async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // Start kubernetes controller
-    let (manager, controller) = Manager::new().await;
+    let (State, controller) = State::new().await;
 
     // Start web server
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(manager.clone()))
+            .app_data(Data::new(State.clone()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)
