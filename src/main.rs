@@ -34,7 +34,7 @@ async fn index(c: Data<State>, _req: HttpRequest) -> impl Responder {
 async fn main() -> Result<()> {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
-    let telemetry = tracing_opentelemetry::layer().with_tracer(telemetry::init_tracer().await);
+    let telemetry = tracing_opentelemetry::layer().with_tracer(controller::telemetry::init_tracer().await);
     let logger = tracing_subscriber::fmt::layer();
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
