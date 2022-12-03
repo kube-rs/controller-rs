@@ -97,7 +97,7 @@ impl Document {
                 .publish(Event {
                     type_: EventType::Normal,
                     reason: "HiddenDoc".into(),
-                    note: Some(format!("Hiding `{}`", name)),
+                    note: Some(format!("Hiding `{name}`")),
                     action: "Reconciling".into(),
                     secondary: None,
                 })
