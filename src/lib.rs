@@ -28,8 +28,8 @@ impl Error {
 pub mod manager;
 pub use manager::Manager;
 
-/// Generated type, for crdgen
-pub use manager::Document;
+/// Controller types + CRD
+pub use manager::*;
 
 /// Log and trace integrations
 pub mod telemetry;
@@ -37,3 +37,5 @@ pub mod telemetry;
 /// Metrics
 mod metrics;
 pub use metrics::Metrics;
+
+#[cfg(test)] pub mod fixtures;

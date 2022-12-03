@@ -44,6 +44,12 @@ opentelemetry-otlp = { version = "0.11.0", features = ["tokio"], optional = true
 tonic = { version = "0.8.3", optional = true }
 thiserror = "1.0.37"
 
+[dev-dependencies]
+assert-json-diff = "2.0.2"
+http = "0.2.8"
+hyper = "0.14.23"
+tower-test = "0.4.0"
+
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
 version = "0.76.0"
@@ -51,4 +57,4 @@ version = "0.76.0"
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube-rs.git"
 #rev = "8dcd5c0865ad0a40520519032119fbe4ea5f85f7"
-#path = "../kube-rs/kube"
+#path = "../kube/kube"

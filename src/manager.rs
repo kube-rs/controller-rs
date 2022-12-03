@@ -18,23 +18,24 @@ use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
 use tracing::*;
 
-static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
+pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
 /// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 ///
 /// This provides a hook for generating the CRD yaml (in crdgen.rs)
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
 #[kube(status = "DocumentStatus", shortname = "doc")]
 pub struct DocumentSpec {
-    title: String,
-    hide: bool,
-    content: String,
+    pub title: String,
+    pub hide: bool,
+    pub content: String,
 }
 /// The status object of `Document`
-#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 pub struct DocumentStatus {
-    hidden: bool,
+    pub hidden: bool,
 }
 
 impl Document {
@@ -45,20 +46,21 @@ impl Document {
 
 // Context for our reconciler
 #[derive(Clone)]
-struct Context {
+pub struct Context {
     /// Kubernetes client
-    client: Client,
+    pub client: Client,
     /// Diagnostics read by the web server
-    diagnostics: Arc<RwLock<Diagnostics>>,
+    pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
-    metrics: Metrics,
+    pub metrics: Metrics,
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
-async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
+pub async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
-    ctx.metrics.count_and_measure();
+    let _timer = ctx.metrics.count_and_measure();
+    ctx.diagnostics.write().await.last_event = Utc::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
 
@@ -73,7 +75,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     .map_err(|e| Error::FinalizerError(Box::new(e)))
 }
 
-fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
+pub fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.reconcile_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
@@ -83,15 +85,13 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        ctx.diagnostics.write().await.last_event = Utc::now();
-        let reporter = ctx.diagnostics.read().await.reporter.clone();
-        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
-        let name = self.name_any();
+        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), &self);
         let ns = self.namespace().unwrap();
+        let name = self.name_any();
         let docs: Api<Document> = Api::namespaced(client, &ns);
 
         let should_hide = self.spec.hide;
-        if self.was_hidden() && should_hide {
+        if !self.was_hidden() && should_hide {
             // only send event the first time
             recorder
                 .publish(Event {
@@ -125,13 +125,10 @@ impl Document {
         Ok(Action::requeue(Duration::from_secs(5 * 60)))
     }
 
-    // Reconcile with finalize cleanup (the object was deleted)
+    // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let client = ctx.client.clone();
-        ctx.diagnostics.write().await.last_event = Utc::now();
-        let reporter = ctx.diagnostics.read().await.reporter.clone();
-        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
-
+        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), &self);
+        // Document doesn't have dependencies in this example case, so we just publish an event
         recorder
             .publish(Event {
                 type_: EventType::Normal,
@@ -142,7 +139,6 @@ impl Document {
             })
             .await
             .map_err(Error::KubeError)?;
-
         Ok(Action::await_change())
     }
 }
@@ -163,12 +159,19 @@ impl Default for Diagnostics {
         }
     }
 }
+impl Diagnostics {
+    fn recorder(&self, client: Client, doc: &Document) -> Recorder {
+        Recorder::new(client, self.reporter.clone(), doc.object_ref(&()))
+    }
+}
 
 /// Data owned by the Manager
 #[derive(Clone, Default)]
 pub struct Manager {
     /// Diagnostics populated by the reconciler
     diagnostics: Arc<RwLock<Diagnostics>>,
+    /// Metrics registry
+    registry: prometheus::Registry,
 }
 
 /// Example Manager that owns a Controller for Document
@@ -182,7 +185,7 @@ impl Manager {
         let manager = Manager::default();
         let context = Arc::new(Context {
             client: client.clone(),
-            metrics: Metrics::default(),
+            metrics: Metrics::default().register(&manager.registry).unwrap(),
             diagnostics: manager.diagnostics.clone(),
         });
 
@@ -205,7 +208,7 @@ impl Manager {
 
     /// Metrics getter
     pub fn metrics(&self) -> Vec<prometheus::proto::MetricFamily> {
-        prometheus::default_registry().gather()
+        self.registry.gather()
     }
 
     /// State getter
