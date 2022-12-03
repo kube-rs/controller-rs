@@ -56,7 +56,7 @@ pub struct Context {
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
-pub async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
+async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
     let _timer = ctx.metrics.count_and_measure();
@@ -75,7 +75,7 @@ pub async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> 
     .map_err(|e| Error::FinalizerError(Box::new(e)))
 }
 
-pub fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
+fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
     ctx.metrics.reconcile_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
@@ -214,5 +214,52 @@ impl Manager {
     /// State getter
     pub async fn diagnostics(&self) -> Diagnostics {
         self.diagnostics.read().await.clone()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{error_policy, reconcile, Context, Document};
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn new_documents_without_finalizers_gets_a_finalizer() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test();
+        // verify that doc gets a finalizer attached during reconcile
+        fakeserver.handle_finalizer_creation(&doc);
+        let res = reconcile(Arc::new(doc), testctx).await;
+        assert!(res.is_ok(), "initial creation succeds in adding finalizer");
+    }
+
+    #[tokio::test]
+    async fn test_document_sends_events_and_patches_doc() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test().finalized();
+        // verify that doc gets a finalizer attached during reconcile
+        fakeserver.handle_event_publish_and_document_patch(&doc);
+        let res = reconcile(Arc::new(doc), testctx).await;
+        assert!(res.is_ok(), "finalized document succeeds in its reconciler");
+    }
+
+    #[tokio::test]
+    async fn illegal_document_reconcile_errors_which_bumps_failure_metric() {
+        let (testctx, fakeserver, _registry) = Context::test();
+        let doc = Arc::new(Document::illegal().finalized());
+        // verify that a finialized doc will run the apply part of the reconciler and publish an event
+        fakeserver.handle_event_publish();
+        let res = reconcile(doc.clone(), testctx.clone()).await;
+        assert!(res.is_err(), "apply reconciler fails on illegal doc");
+        let err = res.unwrap_err();
+        assert!(err.to_string().contains("IllegalDocument"));
+        // calling error policy with the reconciler error should cause the correct metric to be set
+        error_policy(doc.clone(), &err, testctx.clone());
+        //dbg!("actual metrics: {}", registry.gather());
+        let failures = testctx
+            .metrics
+            .failures
+            .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
+            .get();
+        assert_eq!(failures, 1);
     }
 }
