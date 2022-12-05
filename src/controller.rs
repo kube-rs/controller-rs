@@ -18,23 +18,24 @@ use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
 use tracing::*;
 
-static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
+pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 
 /// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 ///
 /// This provides a hook for generating the CRD yaml (in crdgen.rs)
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
 #[kube(status = "DocumentStatus", shortname = "doc")]
 pub struct DocumentSpec {
-    title: String,
-    hide: bool,
-    content: String,
+    pub title: String,
+    pub hide: bool,
+    pub content: String,
 }
 /// The status object of `Document`
-#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 pub struct DocumentStatus {
-    hidden: bool,
+    pub hidden: bool,
 }
 
 impl Document {
@@ -45,20 +46,21 @@ impl Document {
 
 // Context for our reconciler
 #[derive(Clone)]
-struct Context {
+pub struct Context {
     /// Kubernetes client
-    client: Client,
+    pub client: Client,
     /// Diagnostics read by the web server
-    diagnostics: Arc<RwLock<Diagnostics>>,
+    pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
-    metrics: Metrics,
+    pub metrics: Metrics,
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
 async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
-    ctx.metrics.count_and_measure();
+    let _timer = ctx.metrics.count_and_measure();
+    ctx.diagnostics.write().await.last_event = Utc::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
 
@@ -83,21 +85,19 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        ctx.diagnostics.write().await.last_event = Utc::now();
-        let reporter = ctx.diagnostics.read().await.reporter.clone();
-        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
-        let name = self.name_any();
+        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), self);
         let ns = self.namespace().unwrap();
+        let name = self.name_any();
         let docs: Api<Document> = Api::namespaced(client, &ns);
 
         let should_hide = self.spec.hide;
-        if self.was_hidden() && should_hide {
+        if !self.was_hidden() && should_hide {
             // only send event the first time
             recorder
                 .publish(Event {
                     type_: EventType::Normal,
                     reason: "HiddenDoc".into(),
-                    note: Some(format!("Hiding `{}`", name)),
+                    note: Some(format!("Hiding `{name}`")),
                     action: "Reconciling".into(),
                     secondary: None,
                 })
@@ -125,13 +125,10 @@ impl Document {
         Ok(Action::requeue(Duration::from_secs(5 * 60)))
     }
 
-    // Reconcile with finalize cleanup (the object was deleted)
+    // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let client = ctx.client.clone();
-        ctx.diagnostics.write().await.last_event = Utc::now();
-        let reporter = ctx.diagnostics.read().await.reporter.clone();
-        let recorder = Recorder::new(client.clone(), reporter, self.object_ref(&()));
-
+        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), self);
+        // Document doesn't have dependencies in this example case, so we just publish an event
         recorder
             .publish(Event {
                 type_: EventType::Normal,
@@ -142,7 +139,6 @@ impl Document {
             })
             .await
             .map_err(Error::KubeError)?;
-
         Ok(Action::await_change())
     }
 }
@@ -163,27 +159,34 @@ impl Default for Diagnostics {
         }
     }
 }
-
-/// Data owned by the Manager
-#[derive(Clone, Default)]
-pub struct Manager {
-    /// Diagnostics populated by the reconciler
-    diagnostics: Arc<RwLock<Diagnostics>>,
+impl Diagnostics {
+    fn recorder(&self, client: Client, doc: &Document) -> Recorder {
+        Recorder::new(client, self.reporter.clone(), doc.object_ref(&()))
+    }
 }
 
-/// Example Manager that owns a Controller for Document
-impl Manager {
+/// State shared between the controller and the web server
+#[derive(Clone, Default)]
+pub struct State {
+    /// Diagnostics populated by the reconciler
+    diagnostics: Arc<RwLock<Diagnostics>>,
+    /// Metrics registry
+    registry: prometheus::Registry,
+}
+
+/// State is in charge of starting the controller and tracking shared state
+impl State {
     /// Lifecycle initialization interface for app
     ///
-    /// This returns a `Manager` that drives a `Controller` + a future to be awaited
-    /// It is up to `main` to wait for the controller stream.
+    /// This returns the shared State + future that drives a `Controller`
+    /// It is up to `main` to await for the controller stream.
     pub async fn new() -> (Self, BoxFuture<'static, ()>) {
         let client = Client::try_default().await.expect("create client");
-        let manager = Manager::default();
+        let state = State::default();
         let context = Arc::new(Context {
             client: client.clone(),
-            metrics: Metrics::default(),
-            diagnostics: manager.diagnostics.clone(),
+            metrics: Metrics::default().register(&state.registry).unwrap(),
+            diagnostics: state.diagnostics.clone(),
         });
 
         let docs = Api::<Document>::all(client);
@@ -200,16 +203,64 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (manager, controller)
+        (state, controller)
     }
 
     /// Metrics getter
     pub fn metrics(&self) -> Vec<prometheus::proto::MetricFamily> {
-        prometheus::default_registry().gather()
+        self.registry.gather()
     }
 
     /// State getter
     pub async fn diagnostics(&self) -> Diagnostics {
         self.diagnostics.read().await.clone()
+    }
+}
+
+// Integration tests relying on fixtures.rs and its primitive apiserver mocks
+#[cfg(test)]
+mod test {
+    use super::{error_policy, reconcile, Context, Document};
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn new_documents_without_finalizers_gets_a_finalizer() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test();
+        // verify that doc gets a finalizer attached during reconcile
+        fakeserver.handle_finalizer_creation(&doc);
+        let res = reconcile(Arc::new(doc), testctx).await;
+        assert!(res.is_ok(), "initial creation succeds in adding finalizer");
+    }
+
+    #[tokio::test]
+    async fn test_document_sends_events_and_patches_doc() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test().finalized();
+        // verify that doc gets a finalizer attached during reconcile
+        fakeserver.handle_event_publish_and_document_patch(&doc);
+        let res = reconcile(Arc::new(doc), testctx).await;
+        assert!(res.is_ok(), "finalized document succeeds in its reconciler");
+    }
+
+    #[tokio::test]
+    async fn illegal_document_reconcile_errors_which_bumps_failure_metric() {
+        let (testctx, fakeserver, _registry) = Context::test();
+        let doc = Arc::new(Document::illegal().finalized());
+        // verify that a finialized doc will run the apply part of the reconciler and publish an event
+        fakeserver.handle_event_publish();
+        let res = reconcile(doc.clone(), testctx.clone()).await;
+        assert!(res.is_err(), "apply reconciler fails on illegal doc");
+        let err = res.unwrap_err();
+        assert!(err.to_string().contains("IllegalDocument"));
+        // calling error policy with the reconciler error should cause the correct metric to be set
+        error_policy(doc.clone(), &err, testctx.clone());
+        //dbg!("actual metrics: {}", registry.gather());
+        let failures = testctx
+            .metrics
+            .failures
+            .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
+            .get();
+        assert_eq!(failures, 1);
     }
 }

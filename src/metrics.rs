@@ -1,9 +1,6 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
-use prometheus::{
-    register_histogram_vec, register_int_counter, register_int_counter_vec, HistogramVec, IntCounter,
-    IntCounterVec,
-};
+use prometheus::{histogram_opts, opts, HistogramVec, IntCounter, IntCounterVec, Registry};
 use tokio::time::Instant;
 
 #[derive(Clone)]
@@ -15,21 +12,25 @@ pub struct Metrics {
 
 impl Default for Metrics {
     fn default() -> Self {
-        let reconcile_duration = register_histogram_vec!(
-            "doc_controller_reconcile_duration_seconds",
-            "The duration of reconcile to complete in seconds",
+        let reconcile_duration = HistogramVec::new(
+            histogram_opts!(
+                "doc_controller_reconcile_duration_seconds",
+                "The duration of reconcile to complete in seconds"
+            )
+            .buckets(vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]),
             &[],
-            vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]
         )
         .unwrap();
-        let failures = register_int_counter_vec!(
-            "doc_controller_reconciliation_errors_total",
-            "reconciliation errors",
-            &["instance", "error"]
+        let failures = IntCounterVec::new(
+            opts!(
+                "doc_controller_reconciliation_errors_total",
+                "reconciliation errors",
+            ),
+            &["instance", "error"],
         )
         .unwrap();
         let reconciliations =
-            register_int_counter!("doc_controller_reconciliations_total", "reconciliations").unwrap();
+            IntCounter::new("doc_controller_reconciliations_total", "reconciliations").unwrap();
         Metrics {
             reconciliations,
             failures,
@@ -39,6 +40,14 @@ impl Default for Metrics {
 }
 
 impl Metrics {
+    /// Register API metrics to start tracking them.
+    pub fn register(self, registry: &Registry) -> Result<Self, prometheus::Error> {
+        registry.register(Box::new(self.reconcile_duration.clone()))?;
+        registry.register(Box::new(self.failures.clone()))?;
+        registry.register(Box::new(self.reconciliations.clone()))?;
+        Ok(self)
+    }
+
     pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
         self.failures
             .with_label_values(&[doc.name_any().as_ref(), e.metric_label().as_ref()])

@@ -1,5 +1,5 @@
 #![allow(unused_imports, unused_variables)]
-pub use controller::*;
+pub use controller::{Result, State};
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
@@ -11,7 +11,7 @@ use actix_web::{
 };
 
 #[get("/metrics")]
-async fn metrics(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
     let metrics = c.metrics();
     let encoder = TextEncoder::new();
     let mut buffer = vec![];
@@ -25,7 +25,7 @@ async fn health(_: HttpRequest) -> impl Responder {
 }
 
 #[get("/")]
-async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
+async fn index(c: Data<State>, _req: HttpRequest) -> impl Responder {
     let d = c.diagnostics().await;
     HttpResponse::Ok().json(&d)
 }
@@ -34,7 +34,7 @@ async fn index(c: Data<Manager>, _req: HttpRequest) -> impl Responder {
 async fn main() -> Result<()> {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
-    let telemetry = tracing_opentelemetry::layer().with_tracer(telemetry::init_tracer().await);
+    let telemetry = tracing_opentelemetry::layer().with_tracer(controller::telemetry::init_tracer().await);
     let logger = tracing_subscriber::fmt::layer();
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
@@ -50,12 +50,12 @@ async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // Start kubernetes controller
-    let (manager, controller) = Manager::new().await;
+    let (state, controller) = State::new().await;
 
     // Start web server
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(manager.clone()))
+            .app_data(Data::new(state.clone()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)

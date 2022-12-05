@@ -20,16 +20,16 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl Error {
     pub fn metric_label(&self) -> String {
-        format!("{:?}", self).to_lowercase()
+        format!("{self:?}").to_lowercase()
     }
 }
 
 /// State machinery for kube, as exposeable to actix
-pub mod manager;
-pub use manager::Manager;
+pub mod controller;
+pub use controller::State;
 
-/// Generated type, for crdgen
-pub use manager::Document;
+/// Controller types + CRD
+pub use controller::*;
 
 /// Log and trace integrations
 pub mod telemetry;
@@ -37,3 +37,5 @@ pub mod telemetry;
 /// Metrics
 mod metrics;
 pub use metrics::Metrics;
+
+#[cfg(test)] pub mod fixtures;
