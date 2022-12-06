@@ -196,26 +196,21 @@ impl State {
     }
 }
 
-/// Shortcut struct to start everything safely
-pub async fn start_controller(client: Client) -> (BoxFuture<'static, ()>, State) {
+/// Initialize the controller and shared state (given the crd is installed)
+pub async fn init(client: Client) -> (BoxFuture<'static, ()>, State) {
     let state = State::default();
     let docs = Api::<Document>::all(client.clone());
-    ensure_crd_is_installed(&docs).await;
-
+    if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
+        error!("CRD is not queryable; {e:?}. Is the CRD installed?");
+        info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
+        std::process::exit(1);
+    }
     let controller = Controller::new(docs, ListParams::default())
         .run(reconcile, error_policy, state.create_context(client))
         .filter_map(|x| async move { std::result::Result::ok(x) })
         .for_each(|_| futures::future::ready(()))
         .boxed();
     (controller, state)
-}
-
-async fn ensure_crd_is_installed(docs: &Api<Document>) {
-    if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
-        error!("CRD is not queryable; {e:?}. Is the CRD installed?");
-        info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
-        std::process::exit(1);
-    }
 }
 
 // Integration tests relying on fixtures.rs and its primitive apiserver mocks

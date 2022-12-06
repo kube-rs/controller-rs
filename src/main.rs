@@ -1,6 +1,6 @@
 #![allow(unused_imports, unused_variables)]
 use actix_web::{get, middleware, web::Data, App, HttpRequest, HttpResponse, HttpServer, Responder};
-pub use controller::{start_controller, Result, State};
+pub use controller::{self, Result, State};
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
 
     // Prepare shared state for the kubernetes controller and web server
     let client = kube::Client::try_default().await.unwrap();
-    let (controller, state) = start_controller(client).await;
+    let (controller, state) = controller::init(client).await;
 
     // Start web server
     let server = HttpServer::new(move || {
