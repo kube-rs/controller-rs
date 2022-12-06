@@ -68,12 +68,8 @@ impl ApiServerVerifier {
                 serde_json::from_slice(&req_body).expect("valid document from runtime");
             assert_json_include!(actual: runtime_patch, expected: expected_patch);
 
-            let response = doc.finalized(); // what the api server would have done
-            send.send_response(
-                Response::builder()
-                    .body(Body::from(serde_json::to_vec(&response).unwrap()))
-                    .unwrap(),
-            );
+            let response = serde_json::to_vec(&doc.finalized()); // respond as the apiserver would have
+            send.send_response(Response::builder().body(Body::from(response)).unwrap());
         })
     }
 
@@ -129,13 +125,9 @@ impl ApiServerVerifier {
                 "Document::test sets hide so reconciler wants to hide it"
             );
 
-            let response_doc = doc.with_status(status);
+            let response = serde_json::to_vec(&doc.with_status(status)).unwrap();
             // pass through document "patch accepted"
-            send.send_response(
-                Response::builder()
-                    .body(Body::from(serde_json::to_vec(&response_doc).unwrap()))
-                    .unwrap(),
-            );
+            send.send_response(Response::builder().body(Body::from(&response)).unwrap());
         })
     }
 }
@@ -149,9 +141,7 @@ impl Context {
         (
             Arc::new(Self {
                 client: mock_client,
-                metrics: Metrics::default()
-                    .register(&registry)
-                    .expect("could register metrics"),
+                metrics: Metrics::default().register(&registry).unwrap(),
                 diagnostics: Arc::default(),
             }),
             ApiServerVerifier(handle),

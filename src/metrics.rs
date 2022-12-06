@@ -63,6 +63,9 @@ impl Metrics {
     }
 }
 
+/// Smart function duration measurer
+///
+/// Relies on Drop to calculate duration and register the observation in the histogram
 pub struct ReconcileMeasurer {
     start: Instant,
     metric: HistogramVec,

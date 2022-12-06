@@ -24,11 +24,8 @@ impl Error {
     }
 }
 
-/// State machinery for kube, as exposeable to actix
+/// Expose all controller components used by main
 pub mod controller;
-pub use controller::State;
-
-/// Controller types + CRD
 pub use controller::*;
 
 /// Log and trace integrations
