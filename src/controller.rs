@@ -174,38 +174,8 @@ pub struct State {
     registry: prometheus::Registry,
 }
 
-/// State is in charge of starting the controller and tracking shared state
+/// State wrapper around the controller outputs for the web server
 impl State {
-    /// Lifecycle initialization interface for app
-    ///
-    /// This returns the shared State + future that drives a `Controller`
-    /// It is up to `main` to await for the controller stream.
-    pub async fn new() -> (Self, BoxFuture<'static, ()>) {
-        let client = Client::try_default().await.expect("create client");
-        let state = State::default();
-        let context = Arc::new(Context {
-            client: client.clone(),
-            metrics: Metrics::default().register(&state.registry).unwrap(),
-            diagnostics: state.diagnostics.clone(),
-        });
-
-        let docs = Api::<Document>::all(client);
-        // Ensure CRD is installed before loop-watching
-        let _r = docs
-            .list(&ListParams::default().limit(1))
-            .await
-            .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
-
-        // All good. Start controller and return its future.
-        let controller = Controller::new(docs, ListParams::default())
-            .run(reconcile, error_policy, context)
-            .filter_map(|x| async move { std::result::Result::ok(x) })
-            .for_each(|_| futures::future::ready(()))
-            .boxed();
-
-        (state, controller)
-    }
-
     /// Metrics getter
     pub fn metrics(&self) -> Vec<prometheus::proto::MetricFamily> {
         self.registry.gather()
@@ -215,6 +185,32 @@ impl State {
     pub async fn diagnostics(&self) -> Diagnostics {
         self.diagnostics.read().await.clone()
     }
+
+    // Create a Controller Context that can update State
+    pub fn create_context(&self, client: Client) -> Arc<Context> {
+        Arc::new(Context {
+            client,
+            metrics: Metrics::default().register(&self.registry).unwrap(),
+            diagnostics: self.diagnostics.clone(),
+        })
+    }
+}
+
+/// Initialize the controller and shared state (given the crd is installed)
+pub async fn init(client: Client) -> (BoxFuture<'static, ()>, State) {
+    let state = State::default();
+    let docs = Api::<Document>::all(client.clone());
+    if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
+        error!("CRD is not queryable; {e:?}. Is the CRD installed?");
+        info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
+        std::process::exit(1);
+    }
+    let controller = Controller::new(docs, ListParams::default())
+        .run(reconcile, error_policy, state.create_context(client))
+        .filter_map(|x| async move { std::result::Result::ok(x) })
+        .for_each(|_| futures::future::ready(()))
+        .boxed();
+    (controller, state)
 }
 
 // Integration tests relying on fixtures.rs and its primitive apiserver mocks

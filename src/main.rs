@@ -1,14 +1,9 @@
 #![allow(unused_imports, unused_variables)]
-pub use controller::{Result, State};
+use actix_web::{get, middleware, web::Data, App, HttpRequest, HttpResponse, HttpServer, Responder};
+pub use controller::{self, Result, State};
 use prometheus::{Encoder, TextEncoder};
 use tracing::{debug, error, info, trace, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
-
-use actix_web::{
-    get, middleware,
-    web::{self, Data},
-    App, HttpRequest, HttpResponse, HttpServer, Responder,
-};
 
 #[get("/metrics")]
 async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
@@ -49,8 +44,9 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing::subscriber::set_global_default(collector).unwrap();
 
-    // Start kubernetes controller
-    let (state, controller) = State::new().await;
+    // Prepare shared state for the kubernetes controller and web server
+    let client = kube::Client::try_default().await.unwrap();
+    let (controller, state) = controller::init(client).await;
 
     // Start web server
     let server = HttpServer::new(move || {
@@ -65,6 +61,7 @@ async fn main() -> Result<()> {
     .expect("Can not bind to 0.0.0.0:8080")
     .shutdown_timeout(5);
 
+    // Keep the app alive while both the controller and the server is alive
     tokio::select! {
         _ = controller => warn!("controller exited"),
         _ = server.run() => info!("actix exited"),
