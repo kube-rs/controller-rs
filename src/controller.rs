@@ -217,34 +217,55 @@ pub async fn init(client: Client) -> (BoxFuture<'static, ()>, State) {
 #[cfg(test)]
 mod test {
     use super::{error_policy, reconcile, Context, Document};
+    use crate::fixtures::{timeout_after_1s, Scenario};
     use std::sync::Arc;
 
     #[tokio::test]
-    async fn new_documents_without_finalizers_gets_a_finalizer() {
+    async fn documents_without_finalizers_gets_a_finalizer() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test();
-        // verify that doc gets a finalizer attached during reconcile
-        fakeserver.handle_finalizer_creation(doc.clone());
+        let mocksrv = fakeserver.run(Scenario::FinalizerCreation(doc.clone()));
         let res = reconcile(Arc::new(doc), testctx).await;
-        assert!(res.is_ok(), "initial creation succeds in adding finalizer");
+        res.expect("reconciler succeeds");
+        timeout_after_1s(mocksrv).await;
     }
 
     #[tokio::test]
-    async fn test_document_sends_events_and_patches_doc() {
+    async fn finalized_doc_causes_status_patch() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized();
-        // handle and verify a normal reconcile flow publishing an event plus patching
-        fakeserver.handle_event_publish_and_document_patch(doc.clone());
+        let mocksrv = fakeserver.run(Scenario::StatusPatch(doc.clone()));
         let res = reconcile(Arc::new(doc), testctx).await;
-        assert!(res.is_ok(), "finalized document succeeds in its reconciler");
+        res.expect("reconciler succeeds");
+        timeout_after_1s(mocksrv).await;
     }
 
     #[tokio::test]
-    async fn illegal_document_reconcile_errors_which_bumps_failure_metric() {
+    async fn finalized_doc_with_hide_causes_event_and_hide_patch() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test().finalized().needs_hide();
+        let scenario = Scenario::EventPublishThenStatusPatch("HiddenDoc".into(), doc.clone());
+        let mocksrv = fakeserver.run(scenario);
+        let res = reconcile(Arc::new(doc), testctx).await;
+        res.expect("reconciler succeeds");
+        timeout_after_1s(mocksrv).await;
+    }
+
+    #[tokio::test]
+    async fn finalized_doc_with_delete_timestamp_causes_delete() {
+        let (testctx, fakeserver, _) = Context::test();
+        let doc = Document::test().finalized().needs_delete();
+        let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteDoc".into(), doc.clone()));
+        let res = reconcile(Arc::new(doc), testctx).await;
+        res.expect("reconciler succeeds");
+        timeout_after_1s(mocksrv).await;
+    }
+
+    #[tokio::test]
+    async fn illegal_doc_reconcile_errors_which_bumps_failure_metric() {
         let (testctx, fakeserver, _registry) = Context::test();
         let doc = Arc::new(Document::illegal().finalized());
-        // handle and verify a failing reconcile flow only publishing an event
-        fakeserver.handle_event_publish();
+        let mocksrv = fakeserver.run(Scenario::RadioSilence);
         let res = reconcile(doc.clone(), testctx.clone()).await;
         assert!(res.is_err(), "apply reconciler fails on illegal doc");
         let err = res.unwrap_err();
@@ -258,5 +279,6 @@ mod test {
             .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
             .get();
         assert_eq!(failures, 1);
+        timeout_after_1s(mocksrv).await;
     }
 }
