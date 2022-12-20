@@ -224,7 +224,7 @@ mod test {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test();
         // verify that doc gets a finalizer attached during reconcile
-        fakeserver.handle_finalizer_creation(&doc);
+        fakeserver.handle_finalizer_creation(doc.clone());
         let res = reconcile(Arc::new(doc), testctx).await;
         assert!(res.is_ok(), "initial creation succeds in adding finalizer");
     }
@@ -234,7 +234,7 @@ mod test {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized();
         // handle and verify a normal reconcile flow publishing an event plus patching
-        fakeserver.handle_event_publish_and_document_patch(&doc);
+        fakeserver.handle_event_publish_and_document_patch(doc.clone());
         let res = reconcile(Arc::new(doc), testctx).await;
         assert!(res.is_ok(), "finalized document succeeds in its reconciler");
     }

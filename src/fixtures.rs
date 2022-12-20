@@ -47,9 +47,8 @@ pub struct ApiServerVerifier(Handle<Request<Body>, Response<Body>>);
 /// 3. finalized objects "with errors" (i.e. the "illegal" object) will short circuit the apply loop
 /// 4. objects with a deletion timestamp will run the cleanup loop (which will send an event)
 impl ApiServerVerifier {
-    pub fn handle_finalizer_creation(self, doc_: &Document) -> JoinHandle<()> {
+    pub fn handle_finalizer_creation(self, doc: Document) -> JoinHandle<()> {
         let handle = self.0;
-        let doc = doc_.clone();
         tokio::spawn(async move {
             pin_mut!(handle);
             let (request, send) = handle.next_request().await.expect("service not called");
@@ -68,7 +67,7 @@ impl ApiServerVerifier {
                 serde_json::from_slice(&req_body).expect("valid document from runtime");
             assert_json_include!(actual: runtime_patch, expected: expected_patch);
 
-            let response = serde_json::to_vec(&doc.finalized()); // respond as the apiserver would have
+            let response = serde_json::to_vec(&doc.finalized()).unwrap(); // respond as the apiserver would have
             send.send_response(Response::builder().body(Body::from(response)).unwrap());
         })
     }
@@ -88,9 +87,8 @@ impl ApiServerVerifier {
         })
     }
 
-    pub fn handle_event_publish_and_document_patch(self, doc_: &Document) -> JoinHandle<()> {
+    pub fn handle_event_publish_and_document_patch(self, doc: Document) -> JoinHandle<()> {
         let handle = self.0;
-        let doc = doc_.clone();
         tokio::spawn(async move {
             pin_mut!(handle);
             // first expected request (same as handle_event_publish)
@@ -127,25 +125,22 @@ impl ApiServerVerifier {
 
             let response = serde_json::to_vec(&doc.with_status(status)).unwrap();
             // pass through document "patch accepted"
-            send.send_response(Response::builder().body(Body::from(&response)).unwrap());
+            send.send_response(Response::builder().body(Body::from(response)).unwrap());
         })
     }
 }
 
 impl Context {
-    // Create a test context with a mocked kube client, unregistered metrics and default diagnostics
+    // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
     pub fn test() -> (Arc<Self>, ApiServerVerifier, Registry) {
         let (mock_service, handle) = mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
         let registry = Registry::default();
-        (
-            Arc::new(Self {
-                client: mock_client,
-                metrics: Metrics::default().register(&registry).unwrap(),
-                diagnostics: Arc::default(),
-            }),
-            ApiServerVerifier(handle),
-            registry,
-        )
+        let ctx = Self {
+            client: mock_client,
+            metrics: Metrics::default().register(&registry).unwrap(),
+            diagnostics: Arc::default(),
+        };
+        (Arc::new(ctx), ApiServerVerifier(handle), registry)
     }
 }
