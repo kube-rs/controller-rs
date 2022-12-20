@@ -233,7 +233,6 @@ mod test {
     async fn test_document_sends_events_and_patches_doc() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized();
-        // verify that doc gets a finalizer attached during reconcile
         fakeserver.handle_event_publish_and_document_patch(&doc);
         let res = reconcile(Arc::new(doc), testctx).await;
         assert!(res.is_ok(), "finalized document succeeds in its reconciler");
@@ -243,7 +242,6 @@ mod test {
     async fn illegal_document_reconcile_errors_which_bumps_failure_metric() {
         let (testctx, fakeserver, _registry) = Context::test();
         let doc = Arc::new(Document::illegal().finalized());
-        // verify that a finialized doc will run the apply part of the reconciler and publish an event
         fakeserver.handle_event_publish();
         let res = reconcile(doc.clone(), testctx.clone()).await;
         assert!(res.is_err(), "apply reconciler fails on illegal doc");
