@@ -1,14 +1,11 @@
 //! Helper methods only available for tests
-use crate::{Context, Document, DocumentSpec, DocumentStatus, Metrics, DOCUMENT_FINALIZER};
+use crate::{Context, Document, DocumentSpec, DocumentStatus, Metrics, Result, DOCUMENT_FINALIZER};
 use assert_json_diff::assert_json_include;
-use futures::pin_mut;
 use http::{Request, Response};
 use hyper::{body::to_bytes, Body};
 use kube::{Client, Resource, ResourceExt};
 use prometheus::Registry;
 use std::sync::Arc;
-use tokio::task::JoinHandle;
-use tower_test::mock::{self, Handle};
 
 impl Document {
     /// A document that will cause the reconciler to fail
@@ -22,8 +19,22 @@ impl Document {
     pub fn test() -> Self {
         let mut d = Document::new("testdoc", DocumentSpec::default());
         d.meta_mut().namespace = Some("testns".into());
-        d.spec.hide = true;
         d
+    }
+
+    /// Modify document to be set to hide
+    pub fn needs_hide(mut self) -> Self {
+        self.spec.hide = true;
+        self
+    }
+
+    /// Modify document to set a deletion timestamp
+    pub fn needs_delete(mut self) -> Self {
+        use chrono::prelude::{DateTime, TimeZone, Utc};
+        let now: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
+        use k8s_openapi::apimachinery::pkg::apis::meta::v1::Time;
+        self.meta_mut().deletion_timestamp = Some(Time(now));
+        self
     }
 
     /// Modify a document to have the expected finalizer
@@ -38,102 +49,169 @@ impl Document {
         self
     }
 }
-pub struct ApiServerVerifier(Handle<Request<Body>, Response<Body>>);
 
-/// Create a responder + verifier object that deals with the main reconcile scenarios
-///
-/// 1. objects without finalizers will get a finalizer applied (and not call the apply loop)
-/// 2. finalized objects will run through the apply loop
-/// 3. finalized objects "with errors" (i.e. the "illegal" object) will short circuit the apply loop
-/// 4. objects with a deletion timestamp will run the cleanup loop (which will send an event)
+// We wrap tower_test::mock::Handle
+type ApiServerHandle = tower_test::mock::Handle<Request<Body>, Response<Body>>;
+pub struct ApiServerVerifier(ApiServerHandle);
+
+/// Scenarios we test for in ApiServerVerifier
+pub enum Scenario {
+    /// objects without finalizers will get a finalizer applied (and not call the apply loop)
+    FinalizerCreation(Document),
+    /// objects that do not fail and do not cause publishes will only patch
+    StatusPatch(Document),
+    /// finalized objects with hide set causes both an event and then a hide patch
+    EventPublishThenStatusPatch(String, Document),
+    /// finalized objects "with errors" (i.e. the "illegal" object) will short circuit the apply loop
+    RadioSilence,
+    /// objects with a deletion timestamp will run the cleanup loop (which will send an event)
+    Cleanup(String, Document),
+}
+
+pub async fn timeout_after_1s(handle: tokio::task::JoinHandle<()>) {
+    tokio::time::timeout(std::time::Duration::from_secs(1), handle)
+        .await
+        .expect("timeout on mock apiserver")
+        .expect("scenario succeeded")
+}
+
 impl ApiServerVerifier {
-    pub fn handle_finalizer_creation(self, doc: Document) -> JoinHandle<()> {
-        let handle = self.0;
+    /// Tests only get to run specific scenarios that has matching handlers
+    ///
+    /// This setup makes it easy to handle multiple requests by chaining handlers together.
+    ///
+    /// NB: If the controller is making more calls than we are handling in the scenario,
+    /// you then typically see a `KubeError(Service(Closed(())))` from the reconciler.
+    ///
+    /// You should await the `JoinHandle` from this function to ensure that the scenario
+    /// runs to completion (i.e. all expected calls were responded to).
+    /// You should do this with a timeout to avoid tests hanging forever if expecting too much.
+    ///
+    /// Because of the complexity of writing this sort of tests, it's best to offload
+    /// as much as possible to unit tests to limit the size of the scenario handlers.
+    pub fn run(self, scenario: Scenario) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
-            pin_mut!(handle);
-            let (request, send) = handle.next_request().await.expect("service not called");
-            // We expect a json patch to the specified document adding our finalizer
-            assert_eq!(request.method(), http::Method::PATCH);
-            assert_eq!(
-                request.uri().to_string(),
-                format!("/apis/kube.rs/v1/namespaces/testns/documents/{}?", doc.name_any())
-            );
-            let expected_patch = serde_json::json!([
-                { "op": "test", "path": "/metadata/finalizers", "value": null },
-                { "op": "add", "path": "/metadata/finalizers", "value": vec![DOCUMENT_FINALIZER] }
-            ]);
-            let req_body = to_bytes(request.into_body()).await.unwrap();
-            let runtime_patch: serde_json::Value =
-                serde_json::from_slice(&req_body).expect("valid document from runtime");
-            assert_json_include!(actual: runtime_patch, expected: expected_patch);
-
-            let response = serde_json::to_vec(&doc.finalized()).unwrap(); // respond as the apiserver would have
-            send.send_response(Response::builder().body(Body::from(response)).unwrap());
+            // moving self => one scenario per test
+            match scenario {
+                Scenario::FinalizerCreation(doc) => self.handle_finalizer_creation(doc).await,
+                Scenario::StatusPatch(doc) => self.handle_status_patch(doc).await,
+                Scenario::EventPublishThenStatusPatch(reason, doc) => {
+                    self.handle_event_create(reason)
+                        .await
+                        .unwrap()
+                        .handle_status_patch(doc)
+                        .await
+                }
+                Scenario::RadioSilence => Ok(self),
+                Scenario::Cleanup(reason, doc) => {
+                    self.handle_event_create(reason)
+                        .await
+                        .unwrap()
+                        .handle_finalizer_removal(doc)
+                        .await
+                }
+            }
+            .expect("scenario completed without errors");
         })
     }
 
-    pub fn handle_event_publish(self) -> JoinHandle<()> {
-        let handle = self.0;
-        tokio::spawn(async move {
-            pin_mut!(handle);
-            let (request, send) = handle.next_request().await.expect("service not called");
-            assert_eq!(request.method(), http::Method::POST);
-            assert_eq!(
-                request.uri().to_string(),
-                format!("/apis/events.k8s.io/v1/namespaces/testns/events?")
-            );
-            // pass the event straight through
-            send.send_response(Response::builder().body(request.into_body()).unwrap());
-        })
+    // chainable scenario handlers
+
+    async fn handle_finalizer_creation(mut self, doc: Document) -> Result<Self> {
+        let (request, send) = self.0.next_request().await.expect("service not called");
+        // We expect a json patch to the specified document adding our finalizer
+        assert_eq!(request.method(), http::Method::PATCH);
+        assert_eq!(
+            request.uri().to_string(),
+            format!("/apis/kube.rs/v1/namespaces/testns/documents/{}?", doc.name_any())
+        );
+        let expected_patch = serde_json::json!([
+            { "op": "test", "path": "/metadata/finalizers", "value": null },
+            { "op": "add", "path": "/metadata/finalizers", "value": vec![DOCUMENT_FINALIZER] }
+        ]);
+        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let runtime_patch: serde_json::Value =
+            serde_json::from_slice(&req_body).expect("valid document from runtime");
+        assert_json_include!(actual: runtime_patch, expected: expected_patch);
+
+        let response = serde_json::to_vec(&doc.finalized()).unwrap(); // respond as the apiserver would have
+        send.send_response(Response::builder().body(Body::from(response)).unwrap());
+        Ok(self)
     }
 
-    pub fn handle_event_publish_and_document_patch(self, doc: Document) -> JoinHandle<()> {
-        let handle = self.0;
-        tokio::spawn(async move {
-            pin_mut!(handle);
-            // first expected request (same as handle_event_publish)
-            // TODO: find a nice way to re-use the handle between a single test (duplicating logic here atm)
-            let (request, send) = handle.next_request().await.expect("service not called");
-            assert_eq!(request.method(), http::Method::POST);
-            assert_eq!(
-                request.uri().to_string(),
-                format!("/apis/events.k8s.io/v1/namespaces/testns/events?")
-            );
-            send.send_response(Response::builder().body(request.into_body()).unwrap());
-            // second expected request
-            let (request, send) = handle
-                .next_request()
-                .await
-                .expect("service not called second time");
-            assert_eq!(request.method(), http::Method::PATCH);
-            assert_eq!(
-                request.uri().to_string(),
-                format!(
-                    "/apis/kube.rs/v1/namespaces/testns/documents/{}/status?&force=true&fieldManager=cntrlr",
-                    doc.name_any()
-                )
-            );
-            let req_body = to_bytes(request.into_body()).await.unwrap();
-            let json: serde_json::Value =
-                serde_json::from_slice(&req_body).expect("patch_status object is json");
-            let status_json = json.get("status").expect("status object").clone();
-            let status: DocumentStatus = serde_json::from_value(status_json).expect("contains valid status");
-            assert_eq!(
-                status.hidden, true,
-                "Document::test sets hide so reconciler wants to hide it"
-            );
+    async fn handle_finalizer_removal(mut self, doc: Document) -> Result<Self> {
+        let (request, send) = self.0.next_request().await.expect("service not called");
+        // We expect a json patch to the specified document removing our finalizer (at index 0)
+        assert_eq!(request.method(), http::Method::PATCH);
+        assert_eq!(
+            request.uri().to_string(),
+            format!("/apis/kube.rs/v1/namespaces/testns/documents/{}?", doc.name_any())
+        );
+        let expected_patch = serde_json::json!([
+            { "op": "test", "path": "/metadata/finalizers/0", "value": DOCUMENT_FINALIZER },
+            { "op": "remove", "path": "/metadata/finalizers/0", "path": "/metadata/finalizers/0" }
+        ]);
+        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let runtime_patch: serde_json::Value =
+            serde_json::from_slice(&req_body).expect("valid document from runtime");
+        assert_json_include!(actual: runtime_patch, expected: expected_patch);
 
-            let response = serde_json::to_vec(&doc.with_status(status)).unwrap();
-            // pass through document "patch accepted"
-            send.send_response(Response::builder().body(Body::from(response)).unwrap());
-        })
+        let response = serde_json::to_vec(&doc).unwrap(); // respond as the apiserver would have
+        send.send_response(Response::builder().body(Body::from(response)).unwrap());
+        Ok(self)
+    }
+
+    async fn handle_event_create(mut self, reason: String) -> Result<Self> {
+        let (request, send) = self.0.next_request().await.expect("service not called");
+        assert_eq!(request.method(), http::Method::POST);
+        assert_eq!(
+            request.uri().to_string(),
+            format!("/apis/events.k8s.io/v1/namespaces/testns/events?")
+        );
+        // verify name of event matches expected name?
+        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let postdata: serde_json::Value =
+            serde_json::from_slice(&req_body).expect("valid event from runtime");
+        dbg!("postdata for event: {}", postdata.clone());
+        assert_eq!(
+            postdata.get("reason").unwrap().as_str().map(String::from),
+            Some(reason)
+        );
+        // then pass through the body
+        send.send_response(Response::builder().body(Body::from(req_body)).unwrap());
+        Ok(self)
+    }
+
+    async fn handle_status_patch(mut self, doc: Document) -> Result<Self> {
+        let (request, send) = self.0.next_request().await.expect("service not called");
+        assert_eq!(request.method(), http::Method::PATCH);
+        assert_eq!(
+            request.uri().to_string(),
+            format!(
+                "/apis/kube.rs/v1/namespaces/testns/documents/{}/status?&force=true&fieldManager=cntrlr",
+                doc.name_any()
+            )
+        );
+        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&req_body).expect("patch_status object is json");
+        let status_json = json.get("status").expect("status object").clone();
+        let status: DocumentStatus = serde_json::from_value(status_json).expect("contains valid status");
+        assert_eq!(
+            status.hidden, doc.spec.hide,
+            "reconciler sets status.hidden iff doc.spec.hide is set"
+        );
+        let response = serde_json::to_vec(&doc.with_status(status)).unwrap();
+        // pass through document "patch accepted"
+        send.send_response(Response::builder().body(Body::from(response)).unwrap());
+        Ok(self)
     }
 }
+
 
 impl Context {
     // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
     pub fn test() -> (Arc<Self>, ApiServerVerifier, Registry) {
-        let (mock_service, handle) = mock::pair::<Request<Body>, Response<Body>>();
+        let (mock_service, handle) = tower_test::mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
         let registry = Registry::default();
         let ctx = Self {
