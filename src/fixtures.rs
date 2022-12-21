@@ -64,7 +64,7 @@ pub enum Scenario {
     EventPublishThenStatusPatch(String, Document),
     /// finalized objects "with errors" (i.e. the "illegal" object) will short circuit the apply loop
     RadioSilence,
-    /// objects with a deletion timestamp will run the cleanup loop (which will send an event)
+    /// objects with a deletion timestamp will run the cleanup loop sending event and removing the finalizer
     Cleanup(String, Document),
 }
 
@@ -83,12 +83,9 @@ impl ApiServerVerifier {
     /// NB: If the controller is making more calls than we are handling in the scenario,
     /// you then typically see a `KubeError(Service(Closed(())))` from the reconciler.
     ///
-    /// You should await the `JoinHandle` from this function to ensure that the scenario
-    /// runs to completion (i.e. all expected calls were responded to).
-    /// You should do this with a timeout to avoid tests hanging forever if expecting too much.
-    ///
-    /// Because of the complexity of writing this sort of tests, it's best to offload
-    /// as much as possible to unit tests to limit the size of the scenario handlers.
+    /// You should await the `JoinHandle` (with a timeout) from this function to ensure that the
+    /// scenario runs to completion (i.e. all expected calls were responded to),
+    /// using the timeout to catch missing api calls to Kubernetes.
     pub fn run(self, scenario: Scenario) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             // moving self => one scenario per test

@@ -221,12 +221,11 @@ mod test {
     use std::sync::Arc;
 
     #[tokio::test]
-    async fn documents_without_finalizers_gets_a_finalizer() {
+    async fn documents_without_finalizer_gets_a_finalizer() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test();
         let mocksrv = fakeserver.run(Scenario::FinalizerCreation(doc.clone()));
-        let res = reconcile(Arc::new(doc), testctx).await;
-        res.expect("reconciler succeeds");
+        reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
 
@@ -235,8 +234,7 @@ mod test {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized();
         let mocksrv = fakeserver.run(Scenario::StatusPatch(doc.clone()));
-        let res = reconcile(Arc::new(doc), testctx).await;
-        res.expect("reconciler succeeds");
+        reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
 
@@ -246,8 +244,7 @@ mod test {
         let doc = Document::test().finalized().needs_hide();
         let scenario = Scenario::EventPublishThenStatusPatch("HiddenDoc".into(), doc.clone());
         let mocksrv = fakeserver.run(scenario);
-        let res = reconcile(Arc::new(doc), testctx).await;
-        res.expect("reconciler succeeds");
+        reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
 
@@ -256,8 +253,7 @@ mod test {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized().needs_delete();
         let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteDoc".into(), doc.clone()));
-        let res = reconcile(Arc::new(doc), testctx).await;
-        res.expect("reconciler succeeds");
+        reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
 
@@ -267,6 +263,7 @@ mod test {
         let doc = Arc::new(Document::illegal().finalized());
         let mocksrv = fakeserver.run(Scenario::RadioSilence);
         let res = reconcile(doc.clone(), testctx.clone()).await;
+        timeout_after_1s(mocksrv).await;
         assert!(res.is_err(), "apply reconciler fails on illegal doc");
         let err = res.unwrap_err();
         assert!(err.to_string().contains("IllegalDocument"));
@@ -279,6 +276,5 @@ mod test {
             .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
             .get();
         assert_eq!(failures, 1);
-        timeout_after_1s(mocksrv).await;
     }
 }
