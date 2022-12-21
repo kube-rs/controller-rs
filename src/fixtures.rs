@@ -165,7 +165,7 @@ impl ApiServerVerifier {
             request.uri().to_string(),
             format!("/apis/events.k8s.io/v1/namespaces/testns/events?")
         );
-        // verify name of event matches expected name?
+        // verify the event reason matches the expected
         let req_body = to_bytes(request.into_body()).await.unwrap();
         let postdata: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid event from runtime");
