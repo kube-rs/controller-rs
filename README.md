@@ -3,7 +3,7 @@
 [![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
 https://hub.docker.com/r/clux/controller/tags/)
 
-A rust kubernetes reference controller for a [`Document` resource](https://github.com/kube-rs/controller-rs/blob/master/yaml/crd.yaml) using [kube-rs](https://github.com/kube-rs/kube-rs/), with observability instrumentation.
+A rust kubernetes reference controller for a [`Document` resource](https://github.com/kube-rs/controller-rs/blob/main/yaml/crd.yaml) using [kube](https://github.com/kube-rs/kube/), with observability instrumentation.
 
 The `Controller` object reconciles `Document` instances when changes to it are detected, writes to its `.status` object, creates associated events, and uses finalizers for guaranteed delete handling.
 
@@ -109,4 +109,4 @@ The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prome
 ### Events
 The example `reconciler` only checks the `.spec.hidden` bool. If it does, it updates the `.status` object to reflect whether or not the instance `is_hidden`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc samuel`.
 
-While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube-rs/blob/master/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube-rs/).
+While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube/blob/main/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube/).
