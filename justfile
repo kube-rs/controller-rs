@@ -23,6 +23,13 @@ run:
 fmt:
   cargo +nightly fmt
 
+# run unit tests
+test-unit:
+  cargo test
+# run integration tests
+test-integration: install-crd
+  cargo test -- --ignored
+
 # compile for musl (for docker image)
 compile features="":
   #!/usr/bin/env bash
