@@ -11,14 +11,14 @@ impl Document {
     /// A document that will cause the reconciler to fail
     pub fn illegal() -> Self {
         let mut d = Document::new("illegal", DocumentSpec::default());
-        d.meta_mut().namespace = Some("testns".into());
+        d.meta_mut().namespace = Some("default".into());
         d
     }
 
     /// A normal test document
     pub fn test() -> Self {
-        let mut d = Document::new("testdoc", DocumentSpec::default());
-        d.meta_mut().namespace = Some("testns".into());
+        let mut d = Document::new("test", DocumentSpec::default());
+        d.meta_mut().namespace = Some("default".into());
         d
     }
 
@@ -120,7 +120,10 @@ impl ApiServerVerifier {
         assert_eq!(request.method(), http::Method::PATCH);
         assert_eq!(
             request.uri().to_string(),
-            format!("/apis/kube.rs/v1/namespaces/testns/documents/{}?", doc.name_any())
+            format!(
+                "/apis/kube.rs/v1/namespaces/default/documents/{}?",
+                doc.name_any()
+            )
         );
         let expected_patch = serde_json::json!([
             { "op": "test", "path": "/metadata/finalizers", "value": null },
@@ -142,7 +145,10 @@ impl ApiServerVerifier {
         assert_eq!(request.method(), http::Method::PATCH);
         assert_eq!(
             request.uri().to_string(),
-            format!("/apis/kube.rs/v1/namespaces/testns/documents/{}?", doc.name_any())
+            format!(
+                "/apis/kube.rs/v1/namespaces/default/documents/{}?",
+                doc.name_any()
+            )
         );
         let expected_patch = serde_json::json!([
             { "op": "test", "path": "/metadata/finalizers/0", "value": DOCUMENT_FINALIZER },
@@ -163,7 +169,7 @@ impl ApiServerVerifier {
         assert_eq!(request.method(), http::Method::POST);
         assert_eq!(
             request.uri().to_string(),
-            format!("/apis/events.k8s.io/v1/namespaces/testns/events?")
+            format!("/apis/events.k8s.io/v1/namespaces/default/events?")
         );
         // verify the event reason matches the expected
         let req_body = to_bytes(request.into_body()).await.unwrap();
@@ -185,18 +191,15 @@ impl ApiServerVerifier {
         assert_eq!(
             request.uri().to_string(),
             format!(
-                "/apis/kube.rs/v1/namespaces/testns/documents/{}/status?&force=true&fieldManager=cntrlr",
+                "/apis/kube.rs/v1/namespaces/default/documents/{}/status?&force=true&fieldManager=cntrlr",
                 doc.name_any()
             )
         );
         let req_body = to_bytes(request.into_body()).await.unwrap();
         let json: serde_json::Value = serde_json::from_slice(&req_body).expect("patch_status object is json");
         let status_json = json.get("status").expect("status object").clone();
-        let status: DocumentStatus = serde_json::from_value(status_json).expect("contains valid status");
-        assert_eq!(
-            status.hidden, doc.spec.hide,
-            "reconciler sets status.hidden iff doc.spec.hide is set"
-        );
+        let status: DocumentStatus = serde_json::from_value(status_json).expect("valid status");
+        assert_eq!(status.hidden, doc.spec.hide, "status.hidden iff doc.spec.hide");
         let response = serde_json::to_vec(&doc.with_status(status)).unwrap();
         // pass through document "patch accepted"
         send.send_response(Response::builder().body(Body::from(response)).unwrap());

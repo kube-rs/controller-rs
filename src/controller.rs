@@ -92,13 +92,13 @@ impl Document {
 
         let should_hide = self.spec.hide;
         if !self.was_hidden() && should_hide {
-            // only send event the first time
+            // send an event once per hide
             recorder
                 .publish(Event {
                     type_: EventType::Normal,
-                    reason: "HiddenDoc".into(),
+                    reason: "HideRequested".into(),
                     note: Some(format!("Hiding `{name}`")),
-                    action: "Reconciling".into(),
+                    action: "Hiding".into(),
                     secondary: None,
                 })
                 .await
@@ -128,13 +128,13 @@ impl Document {
     // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
         let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), self);
-        // Document doesn't have dependencies in this example case, so we just publish an event
+        // Document doesn't have any real cleanup, so we just publish an event
         recorder
             .publish(Event {
                 type_: EventType::Normal,
-                reason: "DeleteDoc".into(),
+                reason: "DeleteRequested".into(),
                 note: Some(format!("Delete `{}`", self.name_any())),
-                action: "Reconciling".into(),
+                action: "Deleting".into(),
                 secondary: None,
             })
             .await
@@ -213,7 +213,7 @@ pub async fn init(client: Client) -> (BoxFuture<'static, ()>, State) {
     (controller, state)
 }
 
-// Integration tests relying on fixtures.rs and its primitive apiserver mocks
+// Mock tests relying on fixtures.rs and its primitive apiserver mocks
 #[cfg(test)]
 mod test {
     use super::{error_policy, reconcile, Context, Document};
@@ -242,7 +242,7 @@ mod test {
     async fn finalized_doc_with_hide_causes_event_and_hide_patch() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized().needs_hide();
-        let scenario = Scenario::EventPublishThenStatusPatch("HiddenDoc".into(), doc.clone());
+        let scenario = Scenario::EventPublishThenStatusPatch("HideRequested".into(), doc.clone());
         let mocksrv = fakeserver.run(scenario);
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
@@ -252,7 +252,7 @@ mod test {
     async fn finalized_doc_with_delete_timestamp_causes_delete() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized().needs_delete();
-        let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteDoc".into(), doc.clone()));
+        let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteRequested".into(), doc.clone()));
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
@@ -276,5 +276,41 @@ mod test {
             .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
             .get();
         assert_eq!(failures, 1);
+    }
+
+    // Integration test without mocks
+    use kube::api::{Api, ListParams, Patch, PatchParams};
+    #[tokio::test]
+    #[ignore = "uses k8s current-context"]
+    async fn integration_reconcile_should_set_status_and_send_event() {
+        let client = kube::Client::try_default().await.unwrap();
+        let ctx = super::State::default().create_context(client.clone());
+
+        // create a test doc
+        let doc = Document::test().finalized().needs_hide();
+        let docs: Api<Document> = Api::namespaced(client.clone(), "default");
+        let ssapply = PatchParams::apply("ctrltest");
+        let patch = Patch::Apply(doc.clone());
+        docs.patch("test", &ssapply, &patch).await.unwrap();
+
+        // reconcile it (as if it was just applied to the cluster like this)
+        reconcile(Arc::new(doc), ctx).await.unwrap();
+
+        // verify side-effects happened
+        let output = docs.get_status("test").await.unwrap();
+        assert!(output.status.is_some());
+        // verify hide event was found
+        let events: Api<k8s_openapi::api::core::v1::Event> = Api::all(client.clone());
+        let opts = ListParams::default().fields("involvedObject.kind=Document,involvedObject.name=test");
+        let event = events
+            .list(&opts)
+            .await
+            .unwrap()
+            .into_iter()
+            .filter(|e| e.reason.as_deref() == Some("HideRequested"))
+            .last()
+            .unwrap();
+        dbg!("got ev: {:?}", &event);
+        assert_eq!(event.action.as_deref(), Some("Hiding"));
     }
 }
