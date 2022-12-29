@@ -157,5 +157,24 @@ jobs:
 
       - name: Build workspace
         run: cargo build
+      - name: Install crd
+        run: cargo run --bin crdgen | kubectl apply -f -
       - name: Run all default features integration library tests
         run: cargo test --lib --all -- --ignored
+ 
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          toolchain: stable
+          profile: minimal
+      - uses: Swatinem/rust-cache@v2
+
+      # Real CI work starts here
+      - name: Build workspace
+        run: cargo build
+      - name: Run workspace unit tests
+        run: cargo test

@@ -242,7 +242,7 @@ mod test {
     async fn finalized_doc_with_hide_causes_event_and_hide_patch() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized().needs_hide();
-        let scenario = Scenario::EventPublishThenStatusPatch("HiddenDoc".into(), doc.clone());
+        let scenario = Scenario::EventPublishThenStatusPatch("HideRequested".into(), doc.clone());
         let mocksrv = fakeserver.run(scenario);
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
@@ -252,7 +252,7 @@ mod test {
     async fn finalized_doc_with_delete_timestamp_causes_delete() {
         let (testctx, fakeserver, _) = Context::test();
         let doc = Document::test().finalized().needs_delete();
-        let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteDoc".into(), doc.clone()));
+        let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteRequested".into(), doc.clone()));
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
         timeout_after_1s(mocksrv).await;
     }
@@ -281,7 +281,7 @@ mod test {
     // Integration test without mocks
     use kube::api::{Api, ListParams, Patch, PatchParams};
     #[tokio::test]
-    #[ignore = "Uses the current Kubernetes cluster"]
+    #[ignore = "uses k8s current-context"]
     async fn integration_reconcile_should_set_status_and_send_event() {
         let client = kube::Client::try_default().await.unwrap();
         let ctx = super::State::default().create_context(client.clone());
