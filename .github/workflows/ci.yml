@@ -138,3 +138,24 @@ jobs:
         with:
           args: --all-features
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          toolchain: stable
+          profile: minimal
+      - uses: Swatinem/rust-cache@v2
+      - uses: nolar/setup-k3d-k3s@v1
+        with:
+          version: v1.25
+          k3d-name: kube
+          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
+
+      - name: Build workspace
+        run: cargo build
+      - name: Run all default features integration library tests
+        run: cargo test --lib --all -- --ignored
