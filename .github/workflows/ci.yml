@@ -98,7 +98,7 @@ jobs:
           cache-to: type=gha,scope=version5,mode=max
           outputs: type=docker,dest=/tmp/image.tar
       
-      - name: Upload base docker image as artifact
+      - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v3
         with:
           name: controller-image
@@ -145,13 +145,8 @@ jobs:
         with:
           name: controller-image
           path: /tmp
-      -
-        name: Load Docker image
-        run: |
-          docker load --input /tmp/image.tar
-          docker images
-          docker image ls -a
-      # TODO: --set image.tag=SHA
+      - name: Load docker image from tarball
+        run: docker load --input /tmp/image.tar
       - run: helm template charts/doc-controller | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=20s
       - run: kubectl apply -f yaml/instance-samuel.yaml
@@ -225,7 +220,7 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain yaml/)" ]; then
               echo "Uncommitted changes in yaml directory:"
-              git diff yaml
+              git diff yaml/
               echo "Please run "cargo run --bin crdgen > yaml/crd.yaml"
               exit 1
           fi
