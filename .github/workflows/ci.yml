@@ -222,8 +222,6 @@ jobs:
         run: |
           if ! git diff --exit-code yaml/; then
               echo "Uncommitted changes in yaml directory"
-              echo "Please run:"
-              echo "cargo run --bin crdgen > yaml/crd.yaml"
-              echo "helm template charts/doc-controller > yaml/deployment.yaml"
+              echo "Please run 'just generate' and commit the results"
               exit 1
           fi

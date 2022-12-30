@@ -9,7 +9,7 @@ metadata:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
     app.kubernetes.io/version: "0.12.5"
-  namespace: defaultz
+  namespace: default
 automountServiceAccountToken: true
 ---
 # Source: doc-controller/templates/rbac.yaml
