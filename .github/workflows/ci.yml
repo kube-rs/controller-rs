@@ -220,7 +220,7 @@ jobs:
         run: helm template charts/doc-controller > yaml/deployment.yaml
       - name: Ensure crdgen output is committed
         run: |
-          if [ -n "$(git status --porcelain yaml/)" ]; then
+          if [ -n "$(git diff yaml/)" ]; then
               echo "Uncommitted changes in yaml directory:"
               git diff yaml/
               echo "Please run "cargo run --bin crdgen > yaml/crd.yaml"
