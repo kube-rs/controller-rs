@@ -98,6 +98,17 @@ jobs:
           cache-to: type=gha,scope=version5,mode=max
           outputs: type=docker,dest=/tmp/image.tar
       
+      - name: Persist base image build to a tarball
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.prep.outputs.tagsbase }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha,scope=version5
+          cache-to: type=gha,scope=version5,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
       - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v3
         with:
