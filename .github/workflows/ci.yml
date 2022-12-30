@@ -220,7 +220,7 @@ jobs:
         run: helm template charts/doc-controller > yaml/deployment.yaml
       - name: Ensure generated output is committed
         run: |
-          if ! git diff yaml/; then
+          if ! git diff --exit-code yaml/; then
               echo "Uncommitted changes in yaml directory"
               echo "Please run:"
               echo "cargo run --bin crdgen > yaml/crd.yaml"
