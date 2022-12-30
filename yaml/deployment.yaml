@@ -1,18 +1,23 @@
 ---
+# Source: doc-controller/templates/rbac.yaml
 # Scoped service account
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: doc-controller
+  labels:
+    app: doc-controller
+    app.kubernetes.io/name: doc-controller
+    app.kubernetes.io/version: "0.12.5"
   namespace: default
 automountServiceAccountToken: true
-
 ---
+# Source: doc-controller/templates/rbac.yaml
 # Access for the service account
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: control-docs
+  name: doc-controller
 rules:
   - apiGroups: ["kube.rs"]
     resources: ["documents", "documents/status"]
@@ -24,23 +29,23 @@ rules:
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]
-
 ---
-# Binding the role to the account in default
+# Source: doc-controller/templates/rbac.yaml
+# Binding the role to the account
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: doc-controller-binding
+  name: doc-controller
 subjects:
 - kind: ServiceAccount
   namespace: default
   name: doc-controller
 roleRef:
   kind: ClusterRole
-  name: control-docs
+  name: doc-controller
   apiGroup: rbac.authorization.k8s.io
-
 ---
+# Source: doc-controller/templates/service.yaml
 # Expose the http port of the service
 apiVersion: v1
 kind: Service
@@ -49,7 +54,10 @@ metadata:
   namespace: default
   labels:
     app: doc-controller
+    app.kubernetes.io/name: doc-controller
+    app.kubernetes.io/version: "0.12.5"
 spec:
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 8080
@@ -57,9 +65,8 @@ spec:
     name: http
   selector:
     app: doc-controller
-
 ---
-# Main deployment
+# Source: doc-controller/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -67,6 +74,8 @@ metadata:
   namespace: default
   labels:
     app: doc-controller
+    app.kubernetes.io/name: doc-controller
+    app.kubernetes.io/version: "0.12.5"
 spec:
   replicas: 1
   selector:
@@ -76,15 +85,16 @@ spec:
     metadata:
       labels:
         app: doc-controller
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
     spec:
       serviceAccountName: doc-controller
+      securityContext:
+        {}
       containers:
       - name: doc-controller
-        image: clux/controller:otel
-        imagePullPolicy: Always
+        image: "clux/controller:0.12.5"
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          {}
         resources:
           limits:
             cpu: 200m

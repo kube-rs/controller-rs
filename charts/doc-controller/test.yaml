@@ -1,0 +1,5 @@
+image:
+  repository: clux/controller
+  pullPolicy: Always
+  tag: "latest"
+namespace: default
