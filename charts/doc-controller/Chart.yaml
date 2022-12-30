@@ -1,0 +1,6 @@
+apiVersion: v2
+name: doc-controller
+description: document controller sample chart
+type: application
+version: 0.1.0
+appVersion: "0.12.5"

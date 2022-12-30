@@ -6,10 +6,13 @@ SEMVER_VERSION := `grep version Cargo.toml | awk -F"\"" '{print $2}' | head -n 1
 default:
   @just --list --unsorted --color=always | rg -v "    default"
 
-# generate and install crd into the cluster
-install-crd:
-  cargo run --bin crdgen > yaml/crd.yaml
+# install crd into the cluster
+install-crd: generate
   kubectl apply -f yaml/crd.yaml
+
+generate:
+  cargo run --bin crdgen > yaml/crd.yaml
+  helm template charts/doc-controller > yaml/deployment.yaml
 
 # run with opentelemetry
 run-telemetry:

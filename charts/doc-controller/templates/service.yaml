@@ -1,0 +1,22 @@
+---
+# Expose the http port of the service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "controller.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "controller.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ include "controller.fullname" . }}

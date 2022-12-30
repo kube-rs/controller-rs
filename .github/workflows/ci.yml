@@ -96,6 +96,13 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
           cache-from: type=gha,scope=version5
           cache-to: type=gha,scope=version5,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+      
+      - name: Upload base docker image as artifact for e2e tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: controller-image
+          path: /tmp/image.tar
 
       - name: Compile with telemetry
         run: |
@@ -120,6 +127,33 @@ jobs:
           cache-from: type=gha,scope=version5
           cache-to: type=gha,scope=version5,mode=max
 
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [docker]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: nolar/setup-k3d-k3s@v1
+        with:
+          version: v1.25
+          k3d-name: kube
+          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
+      - run: kubectl apply -f yaml/crd.yaml
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Download docker image artifact from docker job
+        uses: actions/download-artifact@v3
+        with:
+          name: controller-image
+          path: /tmp
+      - name: Load docker image from tarball
+        run: docker load --input /tmp/image.tar
+      - run: helm template charts/doc-controller | kubectl apply -f -
+      - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=20s
+      - run: kubectl apply -f yaml/instance-samuel.yaml
+      - run: sleep 2 # TODO: add condition on status and wait for it instead
+      # verify reconcile actions have happened
+      - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
+      - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
 
   lint:
     runs-on: ubuntu-latest
@@ -166,6 +200,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - uses: actions-rs/toolchain@v1
         with:
           override: true
@@ -178,3 +214,14 @@ jobs:
         run: cargo build
       - name: Run workspace unit tests
         run: cargo test
+      - name: Generate crd.yaml
+        run: cargo run --bin crdgen > yaml/crd.yaml
+      - name: Generate deployment.yaml
+        run: helm template charts/doc-controller > yaml/deployment.yaml
+      - name: Ensure generated output is committed
+        run: |
+          if ! git diff --exit-code yaml/; then
+              echo "Uncommitted changes in yaml directory"
+              echo "Please run 'just generate' and commit the results"
+              exit 1
+          fi
