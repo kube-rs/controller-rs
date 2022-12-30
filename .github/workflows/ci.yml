@@ -135,7 +135,7 @@ jobs:
       # TODO: --set image.tag=SHA
       - run: helm template charts/doc-controller | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=20s
-      - run: kubectl apply -f yaml/instance*.yaml
+      - run: kubectl apply -f yaml/instance-samuel.yaml
       - run: sleep 2 # TODO: add condition on status and wait for it instead
       # verify reconcile actions have happened
       - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
@@ -200,6 +200,8 @@ jobs:
         run: cargo test
       - name: Generate crd.yaml
         run: cargo run --bin crdgen > yaml/crd.yaml
+      - name: helm ver?
+        run: helm version
       - name: Generate deployment.yaml
         run: helm template charts/controller > yaml/deployment.yaml
       - name: Ensure crdgen output is committed
