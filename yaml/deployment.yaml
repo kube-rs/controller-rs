@@ -21,7 +21,7 @@ metadata:
 rules:
   - apiGroups: ["kube.rs"]
     resources: ["documents", "documents/status"]
-    verbs:["get", "list", "watch", "patch"]
+    verbs: ["get", "list", "watch", "patch"]
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]
