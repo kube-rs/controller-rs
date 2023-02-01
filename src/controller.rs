@@ -1,6 +1,6 @@
 use crate::{telemetry, Error, Metrics, Result};
 use chrono::{DateTime, Utc};
-use futures::{future::BoxFuture, FutureExt, StreamExt};
+use futures::StreamExt;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
@@ -187,7 +187,7 @@ impl State {
     }
 
     // Create a Controller Context that can update State
-    pub fn create_context(&self, client: Client) -> Arc<Context> {
+    pub fn to_context(&self, client: Client) -> Arc<Context> {
         Arc::new(Context {
             client,
             metrics: Metrics::default().register(&self.registry).unwrap(),
@@ -197,20 +197,21 @@ impl State {
 }
 
 /// Initialize the controller and shared state (given the crd is installed)
-pub async fn init(client: Client) -> (BoxFuture<'static, ()>, State) {
+pub async fn run() {
     let state = State::default();
+    let client = Client::try_default().await.expect("failed to create kube Client");
     let docs = Api::<Document>::all(client.clone());
     if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
         error!("CRD is not queryable; {e:?}. Is the CRD installed?");
         info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
         std::process::exit(1);
     }
-    let controller = Controller::new(docs, ListParams::default())
-        .run(reconcile, error_policy, state.create_context(client))
+    Controller::new(docs, ListParams::default())
+        .shutdown_on_signal()
+        .run(reconcile, error_policy, state.to_context(client))
         .filter_map(|x| async move { std::result::Result::ok(x) })
         .for_each(|_| futures::future::ready(()))
-        .boxed();
-    (controller, state)
+        .await;
 }
 
 // Mock tests relying on fixtures.rs and its primitive apiserver mocks

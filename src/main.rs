@@ -44,14 +44,10 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing::subscriber::set_global_default(collector).unwrap();
 
-    // Prepare shared state for the kubernetes controller and web server
-    let client = kube::Client::try_default().await.unwrap();
-    let (controller, state) = controller::init(client).await;
-
     // Start web server
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(state.clone()))
+            .app_data(Data::new(State::default()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)
@@ -61,10 +57,7 @@ async fn main() -> Result<()> {
     .expect("Can not bind to 0.0.0.0:8080")
     .shutdown_timeout(5);
 
-    // Keep the app alive while both the controller and the server is alive
-    tokio::select! {
-        _ = controller => warn!("controller exited"),
-        _ = server.run() => info!("actix exited"),
-    }
+    // Ensure both the webserver and the controller gracefully shutdown
+    let _ = tokio::join!(controller::run(), server.run());
     Ok(())
 }
