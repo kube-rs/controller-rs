@@ -44,10 +44,14 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing::subscriber::set_global_default(collector).unwrap();
 
+    // Initiatilize Kubernetes controller state
+    let state = State::default();
+    let controller = controller::run(state.clone());
+
     // Start web server
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(State::default()))
+            .app_data(Data::new(state.clone()))
             .wrap(middleware::Logger::default().exclude("/health"))
             .service(index)
             .service(health)
@@ -58,6 +62,6 @@ async fn main() -> Result<()> {
     .shutdown_timeout(5);
 
     // Ensure both the webserver and the controller gracefully shutdown
-    let _ = tokio::join!(controller::run(), server.run());
+    let _ = tokio::join!(controller, server.run());
     Ok(())
 }

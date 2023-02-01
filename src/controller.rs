@@ -197,8 +197,7 @@ impl State {
 }
 
 /// Initialize the controller and shared state (given the crd is installed)
-pub async fn run() {
-    let state = State::default();
+pub async fn run(state: State) {
     let client = Client::try_default().await.expect("failed to create kube Client");
     let docs = Api::<Document>::all(client.clone());
     if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
