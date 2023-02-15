@@ -1,10 +1,11 @@
 NAME := "controller"
 ORG := "kube-rs"
 VERSION := `git rev-parse HEAD`
-SEMVER_VERSION := `grep version Cargo.toml | awk -F"\"" '{print $2}' | head -n 1`
+SEMVER_VERSION := `rg '^version = "(\S*)"' -r '$1' Cargo.toml | head -n 1`
 
+[private]
 default:
-  @just --list --unsorted --color=always | rg -v "    default"
+  @just --list --unsorted
 
 # install crd into the cluster
 install-crd: generate
