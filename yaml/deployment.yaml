@@ -81,6 +81,8 @@ spec:
     metadata:
       labels:
         app: doc-controller
+      annotations:
+        kubectl.kubernetes.io/default-container: doc-controller
     spec:
       serviceAccountName: doc-controller
       securityContext:
