@@ -61,7 +61,6 @@ pub async fn init() {
 mod test {
     // This test only works when telemetry is initialized fully
     // and requires OPENTELEMETRY_ENDPOINT_URL pointing to a valid server
-    // .. tonic does not seem to allow any mocks here
     #[cfg(feature = "telemetry")]
     #[tokio::test]
     #[ignore = "requires a trace exporter"]
