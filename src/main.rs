@@ -1,9 +1,7 @@
 #![allow(unused_imports, unused_variables)]
 use actix_web::{get, middleware, web::Data, App, HttpRequest, HttpResponse, HttpServer, Responder};
-pub use controller::{self, Result, State};
+pub use controller::{self, telemetry, Result, State};
 use prometheus::{Encoder, TextEncoder};
-use tracing::{debug, error, info, trace, warn};
-use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 #[get("/metrics")]
 async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
@@ -27,22 +25,7 @@ async fn index(c: Data<State>, _req: HttpRequest) -> impl Responder {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Setup tracing layers
-    #[cfg(feature = "telemetry")]
-    let telemetry = tracing_opentelemetry::layer().with_tracer(controller::telemetry::init_tracer().await);
-    let logger = tracing_subscriber::fmt::layer();
-    let env_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
-
-    // Decide on layers
-    #[cfg(feature = "telemetry")]
-    let collector = Registry::default().with(telemetry).with(logger).with(env_filter);
-    #[cfg(not(feature = "telemetry"))]
-    let collector = Registry::default().with(logger).with(env_filter);
-
-    // Initialize tracing
-    tracing::subscriber::set_global_default(collector).unwrap();
+    telemetry::init().await;
 
     // Initiatilize Kubernetes controller state
     let state = State::default();
