@@ -35,7 +35,7 @@ test-integration: install-crd
   cargo test -- --ignored
 # run telemetry tests
 test-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 cargo test --lib --all-features -- --ignored
+  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
 
 # compile for musl (for docker image)
 compile features="":
