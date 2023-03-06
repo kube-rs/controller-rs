@@ -224,6 +224,8 @@ jobs:
         run: cargo build
       - name: Run workspace unit tests
         run: cargo test
+      - name: Run full feature unit tests
+        run: cargo test --lib --all-features
       - name: Generate crd.yaml
         run: cargo run --bin crdgen > yaml/crd.yaml
       - name: Generate deployment.yaml

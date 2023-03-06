@@ -35,3 +35,16 @@ pub async fn init_tracer() -> opentelemetry::sdk::trace::Tracer {
         .install_batch(opentelemetry::runtime::Tokio)
         .unwrap()
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[cfg(feature = "telemetry")]
+    #[test]
+    fn get_trace_id_returns_valid_traces() {
+        let id = get_trace_id().to_bytes();
+        dbg!(id);
+        assert!(id.iter().any(|digit| *digit != 0), "valid trace");
+    }
+}
