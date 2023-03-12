@@ -50,7 +50,7 @@ OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,contro
 ```
 
 ### In-cluster
-Use either your locally built image or the one from dockerhub (using opentemetry features by default). Edit the [deployment](./yaml/deployment.yaml)'s image tag appropriately, and then:
+Use either your locally built image or the one from dockerhub (using opentelemetry features by default). Edit the [deployment](./yaml/deployment.yaml)'s image tag appropriately, and then:
 
 ```sh
 kubectl apply -f yaml/deployment.yaml
@@ -59,8 +59,6 @@ kubectl port-forward service/doc-controller 8080:80
 ```
 
 To build and deploy the image quickly, we recommend using [tilt](https://tilt.dev/), via `tilt up` instead.
-
-**NB**: namespace is assumed to be `default`. If you need a different namespace, you can replace `default` with whatever you want in the yaml and set the namespace in your current-context to get all the commands here to work.
 
 ## Usage
 In either of the run scenarios, your app is listening on port `8080`, and it will observe `Document` events.
@@ -104,9 +102,9 @@ $ curl 0.0.0.0:8080/
 {"last_event":"2019-07-17T22:31:37.591320068Z"}
 ```
 
-The metrics will be auto-scraped if you have a standard [`PodMonitor` for `prometheus.io/scrape`](https://github.com/prometheus-community/helm-charts/blob/b69e89e73326e8b504102a75d668dc4351fcdb78/charts/prometheus/values.yaml#L1608-L1650).
+The metrics will be scraped by prometheus if you setup a `PodMonitor` or `ServiceMonitor` for it.
 
 ### Events
-The example `reconciler` only checks the `.spec.hidden` bool. If it does, it updates the `.status` object to reflect whether or not the instance `is_hidden`. It also sends a kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc samuel`.
+The example `reconciler` only checks the `.spec.hidden` bool. If it does, it updates the `.status` object to reflect whether or not the instance `is_hidden`. It also sends a Kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc samuel`.
 
-While this controller has no child objects configured, there is a [`configmapgen_controller`](https://github.com/kube-rs/kube/blob/main/examples/configmapgen_controller.rs) example in [kube-rs](https://github.com/kube-rs/kube/).
+To extend this controller for a real-world setting. Consider looking at the [kube.rs controller guide](https://kube.rs/controllers/intro/).
