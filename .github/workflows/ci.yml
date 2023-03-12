@@ -108,30 +108,26 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly
           components: rustfmt,clippy
-          override: true
-      - name: Run rustfmt
-        run: cargo +nightly fmt -- --check
-      - uses: actions-rs/clippy-check@v1
+      - run: cargo +nightly fmt -- --check
+
+      - uses: giraffate/clippy-action@v1
         with:
-          args: --all-features
-          token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: 'github-pr-review'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-features
 
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          override: true
-          toolchain: stable
-          profile: minimal
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: nolar/setup-k3d-k3s@v1
         with:
@@ -149,14 +145,10 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 2
-      - uses: actions-rs/toolchain@v1
-        with:
-          override: true
-          toolchain: stable
-          profile: minimal
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
       # Real CI work starts here
