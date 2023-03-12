@@ -6,136 +6,76 @@ on:
     branches:
       - main
 
-env:
-  IMAGE: clux/controller
-
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      # Build and push with docker buildx
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Prepare image tags
         id: prep
         run: |
           TAG=$(grep -E "^version" Cargo.toml | awk -F"\"" '{print $2}' | head -n 1)
           IMAGE="${{ env.IMAGE }}"
+          echo "semver=${TAG}" >> $GITHUB_OUTPUT
           if curl -sSL https://registry.hub.docker.com/v1/repositories/${IMAGE}/tags | jq -r ".[].name" | grep -q ${TAG}; then
             echo "Semver tag ${TAG} already exists - not publishing"
-            echo ::set-output name=tagsbase::${IMAGE}:latest
-            echo ::set-output name=tagsotel::${IMAGE}:otel
+            echo "tagsbase=${IMAGE}:latest" >> $GITHUB_OUTPUT
+            echo "tagsotel=${IMAGE}:otel" >> $GITHUB_OUTPUT
           else
             echo "Semver tag ${TAG} not found - publishing"
-            echo ::set-output name=tagsbase::${IMAGE}:latest,${IMAGE}:${TAG}
-            echo ::set-output name=tagsotel::${IMAGE}:otel,${IMAGE}:otel-${TAG}
+            echo "tagsbase=${IMAGE}:latest,${IMAGE}:${TAG}" >> $GITHUB_OUTPUT
+            echo "tagsotel=${IMAGE}:otel,${IMAGE}:otel-${TAG}" >> $GITHUB_OUTPUT
           fi
-          echo ::set-output name=semver::${TAG}
 
-      - uses: docker/setup-buildx-action@v1
-        id: buildx
-
-      - name: Inspect builder
-        run: |
-          echo "Name:      ${{ steps.buildx.outputs.name }}"
-          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
-          echo "Status:    ${{ steps.buildx.outputs.status }}"
-          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
-          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-
-      - uses: docker/metadata-action@v3
-        id: docker_meta
-        with:
-          images: ${{ env.IMAGE }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.prep.outputs.semver }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.title=${{ env.IMAGE }}
-
-      - uses: docker/login-action@v1
+      - name: Docker login on main origin
+        uses: docker/login-action@v2
         if: github.event_name != 'pull_request'
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
+      - name: Docker buildx and push with base features
+        uses: docker/build-push-action@v4
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-dockerx6-${{ steps.prep.outputs.semver }}
-          restore-keys: |
-            ${{ runner.os }}-dockerx6-
-
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git
-            target
-          key: musl-cargo-${{ hashFiles('**/Cargo.toml') }}
-
-
-      - name: Compile base features
-        run: |
-          mkdir -p ~/.cargo/{git,registry}
-          docker run --rm -t \
-              --mount type=bind,source=${{ github.workspace }},target=/volume \
-              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
-              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:stable \
-              cargo build --release
-          cp target/x86_64-unknown-linux-musl/release/controller .
-
-      - name: Build and push controller image with base features
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
           context: .
-          platforms: linux/amd64
+          build-args: FEATURES=""
+          cache-from: type=gha,scope=version6
+          cache-to: type=gha,scope=version6,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.prep.outputs.tagsbase }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          cache-from: type=gha,scope=version5
-          cache-to: type=gha,scope=version5,mode=max
-      
+          platforms: linux/amd64
+
       - name: Persist base image build to a tarball
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
-          builder: ${{ steps.buildx.outputs.name }}
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.prep.outputs.tagsbase }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          cache-from: type=gha,scope=version5
-          cache-to: type=gha,scope=version5,mode=max
+          tags: ${{ steps.prep.outputs.tagsotel }}
+          cache-from: type=gha,scope=version6
+          cache-to: type=gha,scope=version6,mode=max
           outputs: type=docker,dest=/tmp/image.tar
+
       - name: Upload base docker image as artifact for e2e tests
         uses: actions/upload-artifact@v3
         with:
           name: controller-image
           path: /tmp/image.tar
 
-      - name: Compile with telemetry
-        run: |
-          mkdir -p ~/.cargo/{git,registry}
-          docker run --rm -t \
-              --mount type=bind,source=${{ github.workspace }},target=/volume \
-              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
-              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
-              clux/muslrust:stable \
-              cargo build --features=telemetry --release
-          cp target/x86_64-unknown-linux-musl/release/controller .
-
-      - name: Build and push controller image with telemetry
-        uses: docker/build-push-action@v2
+      - name: Docker buildx and push with telemetry
+        uses: docker/build-push-action@v4
         with:
-          builder: ${{ steps.buildx.outputs.name }}
           context: .
-          platforms: linux/amd64
+          build-args: FEATURES="telemetry"
+          cache-from: type=gha,scope=version6
+          cache-to: type=gha,scope=version6,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.prep.outputs.tagsotel }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          cache-from: type=gha,scope=version5
-          cache-to: type=gha,scope=version5,mode=max
+          platforms: linux/amd64
 
   e2e:
     runs-on: ubuntu-latest

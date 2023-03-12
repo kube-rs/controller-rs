@@ -37,36 +37,15 @@ test-integration: install-crd
 test-telemetry:
   OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
 
-# compile for musl (for docker image)
-compile features="":
-  #!/usr/bin/env bash
-  docker run --rm \
-    -v cargo-cache:/root/.cargo \
-    -v $PWD:/volume \
-    -w /volume \
-    -t clux/muslrust:stable \
-    cargo build --release --features={{features}} --bin controller
-  cp target/x86_64-unknown-linux-musl/release/controller .
+[private]
+_build features="":
+  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} --build-arg FEATURES={{features}} .
 
-# docker build (requires compile step first)
-build:
-  docker build -t {{ORG}}/{{NAME}}:{{VERSION}} .
+# Build with default features
+build: (_build "")
+# Build with telemetry
+build-telemetry: (_build "telemetry")
 
-# retag the current git versioned docker tag as latest, and publish both
-tag-latest:
-  docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:latest
-  docker push {{ORG}}/{{NAME}}:{{VERSION}}
-  docker push {{ORG}}/{{NAME}}:latest
-
-# retag the current git versioned docker tag as the current semver and publish
-tag-semver:
-  #!/usr/bin/env bash
-  if curl -sSL https://registry.hub.docker.com/v1/ORGsitories/{{ORG}}/{{NAME}}/tags | jq -r ".[].name" | grep -q {{SEMVER_VERSION}}; then
-    echo "Tag {{SEMVER_VERSION}} already exists - not publishing"
-  else
-    docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:{{SEMVER_VERSION}} .
-    docker push {{ORG}}/{{NAME}}:{{SEMVER_VERSION}}
-  fi
 
 # local helpers for debugging traces
 
