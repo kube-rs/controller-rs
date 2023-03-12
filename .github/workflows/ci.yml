@@ -31,17 +31,19 @@ jobs:
         id: meta
         with:
           images: clux/controller
+          #TODO: enable={{is_default_branch}}
           tags: |
             type=pep440,pattern={{version}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=true
+            type=ref,event=pr
 
       - name: Docker buildx and push with base features
         uses: docker/build-push-action@v4
         with:
           context: .
           build-args: "FEATURES="
-          cache-from: type=gha,scope=base
-          cache-to: type=gha,scope=base,mode=max
+          cache-from: type=gha,scope=base2
+          cache-to: type=gha,scope=base2,mode=max
           #push: ${{ github.ref == 'refs/heads/main' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -53,7 +55,7 @@ jobs:
           context: .
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=base
+          cache-from: type=gha,scope=base2
           outputs: type=docker,dest=/tmp/image.tar
 
       - name: Upload base docker image as artifact for e2e tests
@@ -78,22 +80,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Configure tags based on git tags + latest
+      - name: Configure tags based on git tags for otel
         uses: docker/metadata-action@v4
         id: meta
         with:
           images: clux/controller
+          #TODO: enable={{is_default_branch}}
           tags: |
-            type=pep440,pattern={{version}}
-            type=raw,value=otel,prefix=otel-,enable={{is_default_branch}}
+            type=pep440,pattern={{version}},prefix=otel-
+            type=raw,value=otel
+            type=ref,event=pr,prefix=otel-
 
       - name: Docker buildx and push with telemetry
         uses: docker/build-push-action@v4
         with:
           context: .
           build-args: "FEATURES=telemetry"
-          cache-from: type=gha,scope=otel
-          cache-to: type=gha,scope=otel,mode=max
+          cache-from: type=gha,scope=otel2
+          cache-to: type=gha,scope=otel2,mode=max
           #push: ${{ github.ref == 'refs/heads/main' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
