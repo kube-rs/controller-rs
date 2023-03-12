@@ -37,7 +37,7 @@ jobs:
 
       - name: Docker login on main origin
         uses: docker/login-action@v2
-        if: github.event_name != 'pull_request'
+        #if: github.event_name != 'pull_request'
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -49,7 +49,8 @@ jobs:
           build-args: "FEATURES="
           cache-from: type=gha,scope=version6
           cache-to: type=gha,scope=version6,mode=max
-          push: ${{ github.ref == 'refs/heads/main' }}
+          #push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ steps.prep.outputs.tagsbase }}
           platforms: linux/amd64
 
@@ -76,7 +77,8 @@ jobs:
           build-args: "FEATURES=telemetry"
           cache-from: type=gha,scope=version6
           cache-to: type=gha,scope=version6,mode=max
-          push: ${{ github.ref == 'refs/heads/main' }}
+          #push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ steps.prep.outputs.tagsotel }}
           platforms: linux/amd64
 
