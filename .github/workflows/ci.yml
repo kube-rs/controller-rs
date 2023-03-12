@@ -47,8 +47,8 @@ jobs:
         with:
           context: .
           build-args: "FEATURES="
-          cache-from: type=gha,scope=version6
-          cache-to: type=gha,scope=version6,mode=max
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,scope=base,mode=max
           #push: ${{ github.ref == 'refs/heads/main' }}
           push: true
           tags: ${{ steps.prep.outputs.tagsbase }}
@@ -59,9 +59,9 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.prep.outputs.tagsotel }}
-          cache-from: type=gha,scope=version6
-          cache-to: type=gha,scope=version6,mode=max
+          tags: ${{ steps.prep.outputs.tagsbase }}
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,scope=base,mode=max
           outputs: type=docker,dest=/tmp/image.tar
 
       - name: Upload base docker image as artifact for e2e tests
@@ -75,8 +75,8 @@ jobs:
         with:
           context: .
           build-args: "FEATURES=telemetry"
-          cache-from: type=gha,scope=version6
-          cache-to: type=gha,scope=version6,mode=max
+          cache-from: type=gha,scope=otel
+          cache-to: type=gha,scope=otel,mode=max
           #push: ${{ github.ref == 'refs/heads/main' }}
           push: true
           tags: ${{ steps.prep.outputs.tagsotel }}
