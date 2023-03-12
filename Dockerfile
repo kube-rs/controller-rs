@@ -1,9 +1,9 @@
 FROM clux/muslrust:stable AS builder
-ARG FEATURES=""
+ARG FEATURES
 COPY . .
 RUN --mount=type=cache,target=/volume/target \
     --mount=type=cache,target=/root/.cargo/registry \
-    cargo build --release --features=$FEATURES --bin controller && \
+    cargo build --release --features=${FEATURES} --bin controller && \
     mv /volume/target/x86_64-unknown-linux-musl/release/controller .
 
 FROM cgr.dev/chainguard/static
