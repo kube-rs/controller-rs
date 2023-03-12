@@ -38,13 +38,13 @@ test-telemetry:
   OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
 
 [private]
-_build features="":
-  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} --build-arg "FEATURES={{features}}" .
+_build file="Dockerfile":
+  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} -f {{file}} .
 
 # Build with default features
-build: (_build "")
+build: (_build "Dockerfile")
 # Build with telemetry
-build-telemetry: (_build "telemetry")
+build-telemetry: (_build "Dockerfiles.otel")
 
 
 # local helpers for debugging traces

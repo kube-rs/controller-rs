@@ -24,10 +24,9 @@ jobs:
         id: meta
         with:
           images: clux/controller
-          #TODO: enable={{is_default_branch}}
           tags: |
             type=pep440,pattern={{version}}
-            type=raw,value=latest,enable=true
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
 
       - name: Docker login on main origin
@@ -41,7 +40,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          build-args: "FEATURES="
           cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -77,10 +75,9 @@ jobs:
         id: meta
         with:
           images: clux/controller
-          #TODO: enable={{is_default_branch}}
           tags: |
             type=pep440,pattern={{version}},prefix=otel-
-            type=raw,value=otel
+            type=raw,value=otel,enable={{is_default_branch}}
             type=ref,event=pr,prefix=otel-
 
       - name: Docker login on main origin
@@ -94,7 +91,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          build-args: "FEATURES=telemetry"
+          file: Dockerfile.otel
           cache-from: type=gha,scope=otel
           cache-to: type=gha,scope=otel,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
