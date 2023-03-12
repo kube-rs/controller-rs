@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          build-args: FEATURES=""
+          build-args: "FEATURES="
           cache-from: type=gha,scope=version6
           cache-to: type=gha,scope=version6,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -73,7 +73,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          build-args: FEATURES="telemetry"
+          build-args: "FEATURES=telemetry"
           cache-from: type=gha,scope=version6
           cache-to: type=gha,scope=version6,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}

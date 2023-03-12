@@ -39,7 +39,7 @@ test-telemetry:
 
 [private]
 _build features="":
-  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} --build-arg FEATURES={{features}} .
+  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} --build-arg "FEATURES={{features}}" .
 
 # Build with default features
 build: (_build "")
