@@ -39,6 +39,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compile base features
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              cargo build --release --bin controller
+          cp target/x86_64-unknown-linux-musl/release/controller .
+
       - name: Docker buildx and push with base features
         uses: docker/build-push-action@v4
         with:
@@ -85,6 +105,26 @@ jobs:
             type=pep440,pattern={{version}},prefix=otel-
             type=raw,value=otel,enable={{is_default_branch}}
             type=ref,event=pr,prefix=otel-
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: musl-cargo-otel-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compile with telemetry
+        run: |
+          mkdir -p ~/.cargo/{git,registry}
+          docker run --rm -t \
+              --mount type=bind,source=${{ github.workspace }},target=/volume \
+              --mount type=bind,source=$HOME/.cargo/registry,target=/root/.cargo/registry \
+              --mount type=bind,source=$HOME/.cargo/git,target=/root/.cargo/git \
+              clux/muslrust:stable \
+              cargo build --features=telemetry --release --bin controller
+          cp target/x86_64-unknown-linux-musl/release/controller .
 
       - name: Docker login on main origin
         uses: docker/login-action@v2
