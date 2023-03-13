@@ -37,15 +37,20 @@ test-integration: install-crd
 test-telemetry:
   OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
 
-[private]
-_build file="Dockerfile":
-  DOCKER_BUILDX=1 docker build -t {{ORG}}/{{NAME}}:{{VERSION}} -f {{file}} .
+# compile for musl (for docker image)
+compile features="":
+  #!/usr/bin/env bash
+  docker run --rm \
+    -v cargo-cache:/root/.cargo \
+    -v $PWD:/volume \
+    -w /volume \
+    -t clux/muslrust:stable \
+    cargo build --release --features={{features}} --bin controller
+  cp target/x86_64-unknown-linux-musl/release/controller .
 
-# Build with default features
-build: (_build "Dockerfile")
-# Build with telemetry
-build-telemetry: (_build "Dockerfiles.otel")
-
+# docker build (requires compile step first)
+build:
+  docker build -t {{ORG}}/{{NAME}}:{{VERSION}} .
 
 # local helpers for debugging traces
 
