@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
     .bind("0.0.0.0:8080")?
     .shutdown_timeout(5);
 
-    // Ensure both the webserver and the controller gracefully shutdown
+    // Both runtimes implements graceful shutdown, so poll until both are done
     tokio::join!(controller, server.run()).1?;
     Ok(())
 }
