@@ -478,6 +478,7 @@ name = "controller"
 version = "0.12.5"
 dependencies = [
  "actix-web",
+ "anyhow",
  "assert-json-diff",
  "chrono",
  "futures",

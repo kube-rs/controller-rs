@@ -1,8 +1,3 @@
-NAME := "controller"
-ORG := "kube-rs"
-VERSION := `git rev-parse HEAD`
-SEMVER_VERSION := `rg '^version = "(\S*)"' -r '$1' Cargo.toml | head -n 1`
-
 [private]
 default:
   @just --list --unsorted
@@ -48,25 +43,16 @@ compile features="":
     cargo build --release --features={{features}} --bin controller
   cp target/x86_64-unknown-linux-musl/release/controller .
 
-# docker build (requires compile step first)
-build:
-  docker build -t {{ORG}}/{{NAME}}:{{VERSION}} .
+[private]
+_build features="": (compile {{features}})
+  docker build -t clux/controller:local .
 
-# retag the current git versioned docker tag as latest, and publish both
-tag-latest:
-  docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:latest
-  docker push {{ORG}}/{{NAME}}:{{VERSION}}
-  docker push {{ORG}}/{{NAME}}:latest
+# docker build base
+build-base: (_build "")
+# docker build with telemetry
+build-otel: (_build "telemetry")
 
-# retag the current git versioned docker tag as the current semver and publish
-tag-semver:
-  #!/usr/bin/env bash
-  if curl -sSL https://registry.hub.docker.com/v1/ORGsitories/{{ORG}}/{{NAME}}/tags | jq -r ".[].name" | grep -q {{SEMVER_VERSION}}; then
-    echo "Tag {{SEMVER_VERSION}} already exists - not publishing"
-  else
-    docker tag {{ORG}}/{{NAME}}:{{VERSION}} {{ORG}}/{{NAME}}:{{SEMVER_VERSION}} .
-    docker push {{ORG}}/{{NAME}}:{{SEMVER_VERSION}}
-  fi
+
 
 # local helpers for debugging traces
 
@@ -78,7 +64,7 @@ forward-tempo:
 forward-grafana:
   kubectl port-forward -n monitoring svc/promstack-grafana 8000:80
 
-# generate rbac using audit2rbac
+# constrain rbac based on audit logs using audit2rbac
 gen-rbac:
   #!/usr/bin/env bash
   set -euxo pipefail

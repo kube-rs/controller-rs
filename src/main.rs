@@ -1,6 +1,6 @@
 #![allow(unused_imports, unused_variables)]
 use actix_web::{get, middleware, web::Data, App, HttpRequest, HttpResponse, HttpServer, Responder};
-pub use controller::{self, telemetry, Result, State};
+pub use controller::{self, telemetry, State};
 use prometheus::{Encoder, TextEncoder};
 
 #[get("/metrics")]
@@ -24,7 +24,7 @@ async fn index(c: Data<State>, _req: HttpRequest) -> impl Responder {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     telemetry::init().await;
 
     // Initiatilize Kubernetes controller state
@@ -40,11 +40,10 @@ async fn main() -> Result<()> {
             .service(health)
             .service(metrics)
     })
-    .bind("0.0.0.0:8080")
-    .expect("Can not bind to 0.0.0.0:8080")
+    .bind("0.0.0.0:8080")?
     .shutdown_timeout(5);
 
-    // Ensure both the webserver and the controller gracefully shutdown
-    let _ = tokio::join!(controller, server.run());
+    // Both runtimes implements graceful shutdown, so poll until both are done
+    tokio::join!(controller, server.run()).1?;
     Ok(())
 }
