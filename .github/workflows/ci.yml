@@ -12,9 +12,6 @@ env:
 jobs:
   docker-base:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v3
 
@@ -86,9 +83,6 @@ jobs:
 
   docker-otel:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v3
 
@@ -137,7 +131,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile.otel
           cache-from: type=gha,scope=otel
           cache-to: type=gha,scope=otel,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
