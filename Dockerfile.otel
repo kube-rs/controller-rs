@@ -1,8 +1,18 @@
+FROM clux/muslrust:stable AS planner
+RUN cargo install cargo-chef
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM clux/muslrust:stable AS cacher
+RUN cargo install cargo-chef
+COPY --from=planner /volume/recipe.json recipe.json
+RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
+
 FROM clux/muslrust:stable AS builder
 COPY . .
-RUN --mount=type=cache,target=/volume/target \
-    --mount=type=cache,target=/root/.cargo/registry \
-    cargo build --release --features=telemetry --bin controller && \
+COPY --from=cacher /volume/target target
+COPY --from=cacher /root/.cargo /root/.cargo
+RUN cargo build --bin run --release --features=telemetry --bin controller &&
     mv /volume/target/x86_64-unknown-linux-musl/release/controller .
 
 FROM cgr.dev/chainguard/static
