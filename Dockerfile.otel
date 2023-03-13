@@ -12,7 +12,7 @@ FROM clux/muslrust:stable AS builder
 COPY . .
 COPY --from=cacher /volume/target target
 COPY --from=cacher /root/.cargo /root/.cargo
-RUN cargo build --bin run --release --features=telemetry --bin controller &&
+RUN cargo build --release --features=telemetry --bin controller && \
     mv /volume/target/x86_64-unknown-linux-musl/release/controller .
 
 FROM cgr.dev/chainguard/static
