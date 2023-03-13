@@ -64,6 +64,7 @@ jobs:
           cache-to: type=gha,scope=base,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
 
       - name: Persist base image build to a tarball
@@ -135,6 +136,7 @@ jobs:
           cache-to: type=gha,scope=otel,mode=max
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
 
   e2e:
