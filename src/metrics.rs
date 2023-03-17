@@ -49,8 +49,9 @@ impl Metrics {
     }
 
     pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
+        let err_label = super::error_fmt(e);
         self.failures
-            .with_label_values(&[doc.name_any().as_ref(), e.metric_label().as_ref()])
+            .with_label_values(&[doc.name_any().as_ref(), &err_label])
             .inc()
     }
 

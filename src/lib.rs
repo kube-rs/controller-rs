@@ -18,9 +18,26 @@ pub enum Error {
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-impl Error {
-    pub fn metric_label(&self) -> String {
-        format!("{self:?}").to_lowercase()
+/// Extract the raw enum names involved (recursively) for each nested Error
+///
+/// This allows us to use the error as a label inside a metric
+pub fn error_fmt(e: impl std::error::Error) -> String {
+    let mut src = vec![fmt_dbg_error(&e)];
+    let mut current = e.source();
+    while let Some(cause) = current {
+        src.push(fmt_dbg_error(cause));
+        current = cause.source();
+    }
+    src.into_iter().flatten().collect::<Vec<_>>().join("_")
+}
+fn fmt_dbg_error(e: impl std::error::Error) -> Option<String> {
+    let err = format!("{e:?}");
+    if let Some((first, _)) = err.split_once('(') {
+        Some(first.to_string())
+    } else if err.contains(' ') || err.contains("::") {
+        None
+    } else {
+        Some(err)
     }
 }
 

@@ -207,7 +207,6 @@ impl ApiServerVerifier {
     }
 }
 
-
 impl Context {
     // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
     pub fn test() -> (Arc<Self>, ApiServerVerifier, Registry) {
