@@ -1,5 +1,5 @@
 use crate::{telemetry, Error, Metrics, Result};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, SecondsFormat};
 use futures::StreamExt;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
@@ -8,7 +8,7 @@ use kube::{
         controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
         finalizer::{finalizer, Event as Finalizer},
-        watcher::Config,
+        predicates, reflector, watcher, WatchStreamExt,
     },
     CustomResource, Resource,
 };
@@ -37,6 +37,7 @@ pub struct DocumentSpec {
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 pub struct DocumentStatus {
     pub hidden: bool,
+    pub last_update: String,
 }
 
 impl Document {
@@ -114,9 +115,11 @@ impl Document {
             "kind": "Document",
             "status": DocumentStatus {
                 hidden: should_hide,
+                last_update: Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true),
             }
         }));
         let ps = PatchParams::apply("cntrlr").force();
+        info!("patching status!");
         let _o = docs
             .patch_status(&name, &ps, &new_status)
             .await
@@ -206,7 +209,13 @@ pub async fn run(state: State) {
         info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
         std::process::exit(1);
     }
-    Controller::new(docs, Config::default().any_semantic())
+    // Trigger the controller only when there are real changes to the crd
+    let (reader, writer) = reflector::store();
+    let triggers = reflector(writer, watcher(docs, watcher::Config::default().any_semantic()))
+        .applied_objects()
+        .predicate_filter(predicates::generation);
+
+    Controller::for_stream(triggers, reader)
         .shutdown_on_signal()
         .run(reconcile, error_policy, state.to_context(client))
         .filter_map(|x| async move { std::result::Result::ok(x) })

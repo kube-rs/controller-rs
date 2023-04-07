@@ -42,7 +42,7 @@ pub async fn init() {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
     let telemetry = tracing_opentelemetry::layer().with_tracer(init_tracer().await);
-    let logger = tracing_subscriber::fmt::layer();
+    let logger = tracing_subscriber::fmt::layer().compact();
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();

@@ -52,8 +52,8 @@ hyper = "0.14.23"
 tower-test = "0.4.0"
 
 [dependencies.kube]
-features = ["runtime", "client", "derive"]
-#version = "0.81.0"
+features = ["runtime", "client", "derive", "unstable-runtime"]
+version = "0.81.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube.git"
