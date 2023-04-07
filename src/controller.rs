@@ -1,5 +1,5 @@
 use crate::{telemetry, Error, Metrics, Result};
-use chrono::{DateTime, Utc, SecondsFormat};
+use chrono::{DateTime, SecondsFormat, Utc};
 use futures::StreamExt;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
