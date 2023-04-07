@@ -119,7 +119,6 @@ impl Document {
             }
         }));
         let ps = PatchParams::apply("cntrlr").force();
-        info!("patching status!");
         let _o = docs
             .patch_status(&name, &ps, &new_status)
             .await
