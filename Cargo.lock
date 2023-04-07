@@ -1207,8 +1207,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.80.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=740111f37ea5b25acc1cb0df9e2cf49a01546416#740111f37ea5b25acc1cb0df9e2cf49a01546416"
+version = "0.81.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b1627877037d7d741dea776b0794911d8dbd99a4b3a213a257238b5803c8adb"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1219,8 +1220,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.80.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=740111f37ea5b25acc1cb0df9e2cf49a01546416#740111f37ea5b25acc1cb0df9e2cf49a01546416"
+version = "0.81.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ad949ca6801c01670509d4ba75f6b4d033a943ed228350a4a149333bad8c3ce"
 dependencies = [
  "base64 0.20.0",
  "bytes",
@@ -1253,8 +1255,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.80.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=740111f37ea5b25acc1cb0df9e2cf49a01546416#740111f37ea5b25acc1cb0df9e2cf49a01546416"
+version = "0.81.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb0462ca1116c464f91d46569e2a22b65949b063e9c727719eb5d8343a4495c5"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1270,8 +1273,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.80.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=740111f37ea5b25acc1cb0df9e2cf49a01546416#740111f37ea5b25acc1cb0df9e2cf49a01546416"
+version = "0.81.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ae5ec79270638912775e2dfc23969a40881e650b7e1a5027213e398121d5f92"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1282,8 +1286,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.80.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=740111f37ea5b25acc1cb0df9e2cf49a01546416#740111f37ea5b25acc1cb0df9e2cf49a01546416"
+version = "0.81.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "982748367d2021fc898e08f8a1dffd7e1be94c13b46a347b0699ff87e507520d"
 dependencies = [
  "ahash 0.8.3",
  "async-trait",
