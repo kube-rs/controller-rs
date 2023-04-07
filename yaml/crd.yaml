@@ -38,7 +38,6 @@ spec:
             type: object
           status:
             description: The status object of `Document`
-            nullable: true
             properties:
               hidden:
                 type: boolean

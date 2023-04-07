@@ -8,6 +8,7 @@ use kube::{
         controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
         finalizer::{finalizer, Event as Finalizer},
+        watcher::Config,
     },
     CustomResource, Resource,
 };
@@ -205,7 +206,7 @@ pub async fn run(state: State) {
         info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
         std::process::exit(1);
     }
-    Controller::new(docs, ListParams::default())
+    Controller::new(docs, Config::default().any_semantic())
         .shutdown_on_signal()
         .run(reconcile, error_policy, state.to_context(client))
         .filter_map(|x| async move { std::result::Result::ok(x) })
