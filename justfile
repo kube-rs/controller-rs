@@ -44,7 +44,8 @@ compile features="":
   cp target/x86_64-unknown-linux-musl/release/controller .
 
 [private]
-_build features="": (compile "{{features}}")
+_build features="":
+  just compile {{features}}
   docker build -t clux/controller:local .
 
 # docker build base

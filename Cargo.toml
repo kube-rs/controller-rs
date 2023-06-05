@@ -27,33 +27,33 @@ telemetry = ["tonic", "opentelemetry-otlp"]
 
 [dependencies]
 actix-web = "4.3.1"
-futures = "0.3.25"
-tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
+futures = "0.3.28"
+tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
 k8s-openapi = { version = "0.18.0", features = ["v1_25"], default-features = false }
-schemars = { version = "0.8.11", features = ["chrono"] }
-serde = { version = "1.0.148", features = ["derive"] }
-serde_json = "1.0.89"
-serde_yaml = "0.9.18"
+schemars = { version = "0.8.12", features = ["chrono"] }
+serde = { version = "1.0.163", features = ["derive"] }
+serde_json = "1.0.96"
+serde_yaml = "0.9.21"
 prometheus = "0.13.3"
-chrono = { version = "0.4.23", features = ["serde"] }
+chrono = { version = "0.4.26", features = ["serde"] }
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ["json", "env-filter"] }
-tracing-opentelemetry = "0.18.0"
-opentelemetry = { version = "0.18.0", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.11.0", features = ["tokio"], optional = true }
-tonic = { version = "0.8.3", optional = true }
-thiserror = "1.0.37"
-anyhow = "1.0.69"
+tracing-subscriber = { version = "0.3.17", features = ["json", "env-filter"] }
+tracing-opentelemetry = "0.19.0"
+opentelemetry = { version = "0.19.0", features = ["trace", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.12.0", features = ["tokio"], optional = true }
+tonic = { version = "0.8", optional = true } # 0.9 blocked on opentelemetry-otlp release
+thiserror = "1.0.40"
+anyhow = "1.0.71"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
-http = "0.2.8"
-hyper = "0.14.23"
+http = "0.2.9"
+hyper = "0.14.26"
 tower-test = "0.4.0"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "0.82.0"
+version = "0.83.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube.git"
