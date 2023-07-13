@@ -1155,7 +1155,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.83.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=fa1e92e7a57e276c4d3ab018293a67eaa425cfaf#fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+source = "git+https://github.com/kube-rs/kube.git?rev=19b90ad3a4dbc83e1dd742847c7707333259b1bb#19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1167,7 +1167,7 @@ dependencies = [
 [[package]]
 name = "kube-client"
 version = "0.83.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=fa1e92e7a57e276c4d3ab018293a67eaa425cfaf#fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+source = "git+https://github.com/kube-rs/kube.git?rev=19b90ad3a4dbc83e1dd742847c7707333259b1bb#19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 dependencies = [
  "base64 0.20.0",
  "bytes",
@@ -1201,7 +1201,7 @@ dependencies = [
 [[package]]
 name = "kube-core"
 version = "0.83.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=fa1e92e7a57e276c4d3ab018293a67eaa425cfaf#fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+source = "git+https://github.com/kube-rs/kube.git?rev=19b90ad3a4dbc83e1dd742847c7707333259b1bb#19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1218,7 +1218,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.83.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=fa1e92e7a57e276c4d3ab018293a67eaa425cfaf#fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+source = "git+https://github.com/kube-rs/kube.git?rev=19b90ad3a4dbc83e1dd742847c7707333259b1bb#19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1230,7 +1230,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.83.0"
-source = "git+https://github.com/kube-rs/kube.git?rev=fa1e92e7a57e276c4d3ab018293a67eaa425cfaf#fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+source = "git+https://github.com/kube-rs/kube.git?rev=19b90ad3a4dbc83e1dd742847c7707333259b1bb#19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 dependencies = [
  "ahash 0.8.3",
  "async-trait",

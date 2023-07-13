@@ -57,5 +57,5 @@ features = ["runtime", "client", "derive"]
 
 # testing new releases - ignore
 git = "https://github.com/kube-rs/kube.git"
-rev = "fa1e92e7a57e276c4d3ab018293a67eaa425cfaf"
+rev = "19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 #path = "../kube/kube"
