@@ -43,6 +43,12 @@ pub async fn init() {
     #[cfg(feature = "telemetry")]
     let telemetry = tracing_opentelemetry::layer().with_tracer(init_tracer().await);
     let logger = tracing_subscriber::fmt::layer().compact();
+
+    let console = console_subscriber::ConsoleLayer::builder()
+        .retention(std::time::Duration::from_secs(60))
+        //.server_addr(([0, 0, 0, 0], 5555))
+        .spawn();
+
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
@@ -51,7 +57,7 @@ pub async fn init() {
     #[cfg(feature = "telemetry")]
     let collector = Registry::default().with(telemetry).with(logger).with(env_filter);
     #[cfg(not(feature = "telemetry"))]
-    let collector = Registry::default().with(logger).with(env_filter);
+    let collector = Registry::default().with(console).with(logger);
 
     // Initialize tracing
     tracing::subscriber::set_global_default(collector).unwrap();

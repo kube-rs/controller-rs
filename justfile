@@ -12,11 +12,15 @@ generate:
 
 # run with opentelemetry
 run-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
+  OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry --release
 
 # run without opentelemetry
 run:
   RUST_LOG=info,kube=debug,controller=debug cargo run
+
+# run with console tracing (can be connected to with tokio-console)
+run-console:
+  RUSTFLAGS="--cfg tokio_unstable" RUST_LOG="info,kube=debug,controller=debug,runtime=trace,tokio=trace" cargo run --release
 
 # format with nightly rustfmt
 fmt:
