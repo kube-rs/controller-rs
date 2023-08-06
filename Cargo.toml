@@ -41,7 +41,7 @@ tracing-subscriber = { version = "0.3.17", features = ["json", "env-filter"] }
 tracing-opentelemetry = "0.20.0"
 opentelemetry = { version = "0.20.0", features = ["trace", "rt-tokio"] }
 opentelemetry-otlp = { version = "0.13.0", features = ["tokio"], optional = true }
-tonic = { version = "0.9", optional = true } # 0.9 blocked on opentelemetry-otlp release
+tonic = { version = "0.9", optional = true }
 thiserror = "1.0.44"
 anyhow = "1.0.72"
 
@@ -52,8 +52,9 @@ hyper = "0.14.27"
 tower-test = "0.4.0"
 
 [dependencies.kube]
-features = ["runtime", "client", "derive"]
+features = ["runtime", "client", "derive", "rustls-tls"]
 version = "0.85.0"
+default-features = false
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube.git"
