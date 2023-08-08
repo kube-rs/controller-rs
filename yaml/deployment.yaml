@@ -89,7 +89,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: clux/controller:otel-0.12.7
+        image: clux/controller:0.12.7
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
@@ -107,8 +107,6 @@ spec:
         env:
         - name: RUST_LOG
           value: info,kube=debug,controller=debug
-        - name: OPENTELEMETRY_ENDPOINT_URL
-          value: https://promstack-tempo.monitoring.svc.cluster.local:4317
         readinessProbe:
           httpGet:
             path: /health

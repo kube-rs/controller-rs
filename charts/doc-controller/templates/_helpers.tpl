@@ -21,6 +21,6 @@ app: {{ include "controller.name" . }}
 {{- if .Values.tracing.enabled }}
 {{- "otel-" }}{{ .Values.version | default .Chart.AppVersion }}
 {{- else }}
-{{ .Values.version | default .Chart.AppVersion }}
+{{- .Values.version | default .Chart.AppVersion }}
 {{- end }}
 {{- end }}

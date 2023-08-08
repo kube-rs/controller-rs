@@ -25,7 +25,7 @@ securityContext: {}
 
 # Enable the feature-flagged opentelemetry trace layer pushing over grpc
 tracing:
-  enabled: true # prefixes tag with otel
+  enabled: false # prefixes tag with otel
   endpoint: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
 
 logging:
