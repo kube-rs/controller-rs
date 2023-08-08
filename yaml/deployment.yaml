@@ -89,7 +89,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: "clux/controller:0.12.5"
+        image: clux/controller:0.12.5
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
@@ -105,11 +105,8 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
-        # We are pointing to tempo or grafana tracing agent's otlp grpc receiver port
-        - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         - name: RUST_LOG
-          value: "info,kube=debug,controller=debug"
+          value: info,kube=debug,controller=debug
         readinessProbe:
           httpGet:
             path: /health

@@ -30,7 +30,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: {{ .Values.image.repository }}:{{ include "controller.tag" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
@@ -41,11 +41,15 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
-        # We are pointing to tempo or grafana tracing agent's otlp grpc receiver port
-        - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         - name: RUST_LOG
-          value: "info,kube=debug,controller=debug"
+          value: {{ .Values.logging.env_filter }}
+        {{- if .Values.tracing.enabled }}
+        - name: OPENTELEMETRY_ENDPOINT_URL
+          value: {{ .Values.tracing.endpoint }}
+        {{- end }}
+        {{- with .Values.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         readinessProbe:
           httpGet:
             path: /health
