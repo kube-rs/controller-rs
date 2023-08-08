@@ -8,7 +8,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.5"
+    app.kubernetes.io/version: "0.12.7"
   namespace: default
 automountServiceAccountToken: true
 ---
@@ -51,7 +51,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.5"
+    app.kubernetes.io/version: "0.12.7"
 spec:
   type: ClusterIP
   ports:
@@ -71,7 +71,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.5"
+    app.kubernetes.io/version: "0.12.7"
 spec:
   replicas: 1
   selector:
@@ -89,7 +89,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: "clux/controller:0.12.5"
+        image: clux/controller:otel-0.12.7
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
@@ -105,14 +105,37 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
-        # We are pointing to tempo or grafana tracing agent's otlp grpc receiver port
-        - name: OPENTELEMETRY_ENDPOINT_URL
-          value: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
         - name: RUST_LOG
-          value: "info,kube=debug,controller=debug"
+          value: info,kube=debug,controller=debug
+        - name: OPENTELEMETRY_ENDPOINT_URL
+          value: https://promstack-tempo.monitoring.svc.cluster.local:4317
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5
+---
+# Source: doc-controller/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: doc-controller
+  namespace: default
+  labels:
+    app: doc-controller
+    app.kubernetes.io/name: doc-controller
+    app.kubernetes.io/version: "0.12.7"
+spec:
+  endpoints:
+  - port: http
+    honorLabels: true
+    path: /metrics
+    scheme: http
+  jobLabel: doc-controller
+  selector:
+    matchLabels:
+      app: doc-controller
+  namespaceSelector:
+    matchNames:
+      - default

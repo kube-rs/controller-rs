@@ -1,19 +1,17 @@
 replicaCount: 1
 nameOverride: ""
 namespace: "default"
+version: "" # pin a specific version
 
 image:
   repository: clux/controller
   pullPolicy: IfNotPresent
-  tag: ""
 
 imagePullSecrets: []
 
 serviceAccount:
   annotations: {}
 podAnnotations: {}
-  # prometheus.io/scrape: "true"
-  # prometheus.io/port: "8080"
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -24,6 +22,16 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+# Enable the feature-flagged opentelemetry trace layer pushing over grpc
+tracing:
+  enabled: true # prefixes tag with otel
+  endpoint: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
+
+logging:
+  env_filter: info,kube=debug,controller=debug
+
+env: []
 
 service:
   type: ClusterIP
@@ -37,6 +45,7 @@ resources:
     cpu: 50m
     memory: 100Mi
 
-# TODO: evar option for otel
-# TODO: how to select between otel and non otel?
-# TODO: metrics scraping?
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  scheme: http

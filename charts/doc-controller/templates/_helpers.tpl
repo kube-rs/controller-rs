@@ -17,3 +17,10 @@ app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | qu
 app: {{ include "controller.name" . }}
 {{- end }}
 
+{{- define "controller.tag" -}}
+{{- if .Values.tracing.enabled }}
+{{- "otel-" }}{{ .Values.version | default .Chart.AppVersion }}
+{{- else }}
+{{ .Values.version | default .Chart.AppVersion }}
+{{- end }}
+{{- end }}
