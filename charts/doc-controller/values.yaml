@@ -46,6 +46,6 @@ resources:
     memory: 100Mi
 
 serviceMonitor:
-  enabled: true
+  enabled: false
   path: /metrics
   scheme: http

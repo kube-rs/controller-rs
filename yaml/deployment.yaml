@@ -115,27 +115,3 @@ spec:
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5
----
-# Source: doc-controller/templates/servicemonitor.yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: doc-controller
-  namespace: default
-  labels:
-    app: doc-controller
-    app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.7"
-spec:
-  endpoints:
-  - port: http
-    honorLabels: true
-    path: /metrics
-    scheme: http
-  jobLabel: doc-controller
-  selector:
-    matchLabels:
-      app: doc-controller
-  namespaceSelector:
-    matchNames:
-      - default
