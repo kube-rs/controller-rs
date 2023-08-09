@@ -1,11 +1,13 @@
-# Release process :: cargo-release >= 0.23
+# Release process
 #
-# Dependencies: https://kube.rs/tools
+# Versions are bumped in both Cargo.toml and Chart.yaml simultaneously through cargo-release
 #
-# 1. cargo release minor --execute
+# 1. cargo release patch --execute
+# 2. just generate
+# 3. git add yaml && git commit --amend --signoff
 
 # Reference
-# https://github.com/sunng87/cargo-release/blob/master/docs/reference.md
+# https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
 
 pre-release-replacements = [
   {file="charts/doc-controller/Chart.yaml", search="appVersion: .*", replace="appVersion: {{version}}"},
@@ -14,5 +16,6 @@ pre-release-commit-message = "release {{version}}"
 push = false
 tag = true
 tag-name = "{{version}}"
-sign-commit = true
 sign-tag = true
+sign-commit = true
+enable-all-features = true
