@@ -1,0 +1,18 @@
+# Release process :: cargo-release >= 0.23
+#
+# Dependencies: https://kube.rs/tools
+#
+# 1. cargo release minor --execute
+
+# Reference
+# https://github.com/sunng87/cargo-release/blob/master/docs/reference.md
+
+pre-release-replacements = [
+  {file="charts/doc-controller/Chart.yaml", search="appVersion: .*", replace="appVersion: {{version}}"},
+]
+pre-release-commit-message = "release {{version}}"
+push = false
+tag = true
+tag-name = "{{version}}"
+sign-commit = true
+sign-tag = true
