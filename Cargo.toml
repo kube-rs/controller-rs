@@ -29,7 +29,7 @@ telemetry = ["tonic", "opentelemetry-otlp"]
 actix-web = "4.3.1"
 futures = "0.3.28"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
-k8s-openapi = { version = "0.19.0", features = ["v1_26"], default-features = false }
+k8s-openapi = { version = "0.20.0", features = ["latest"] }
 schemars = { version = "0.8.12", features = ["chrono"] }
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = "1.0.105"
@@ -52,9 +52,8 @@ hyper = "0.14.27"
 tower-test = "0.4.0"
 
 [dependencies.kube]
-features = ["runtime", "client", "derive", "rustls-tls"]
-version = "0.85.0"
-default-features = false
+features = ["runtime", "client", "derive" ]
+version = "0.86.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube.git"
