@@ -158,10 +158,10 @@ jobs:
           path: /tmp
       - name: Load docker image from tarball
         run: docker load --input /tmp/image.tar
+      #apiPort="$(kubectl get svc kubernetes -n default -ojson | jq '.spec.ports[0].targetPort')"
       - run: |
-          apiPort="$(kubectl get svc kubernetes -n default -ojson | jq '.spec.ports[0].targetPort')"
-          echo $apiPort
           kubectl get svc kubernetes -n default -oyaml
+          apiPort=https
           helm template charts/doc-controller --set version=latest --set networkPolicy.kubernetesPort=${apiPort} | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
       - run: kubectl apply -f yaml/instance-samuel.yaml
