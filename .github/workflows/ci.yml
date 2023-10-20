@@ -145,7 +145,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
         with:
-          version: v1.26
+          version: v1.27
           k3d-name: kube
           k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
       - run: kubectl apply -f yaml/crd.yaml
@@ -158,11 +158,12 @@ jobs:
           path: /tmp
       - name: Load docker image from tarball
         run: docker load --input /tmp/image.tar
-      - run: helm template charts/doc-controller --set version="latest" | kubectl apply -f -
+      - run: helm template charts/doc-controller --set version=latest --set networkPolicy.kubernetesPort=443 | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
       - run: kubectl apply -f yaml/instance-samuel.yaml
       - run: sleep 2 # TODO: add condition on status and wait for it instead
       # verify reconcile actions have happened
+      - run: kubectl logs deploy/doc-controller
       - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
       - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs
 
