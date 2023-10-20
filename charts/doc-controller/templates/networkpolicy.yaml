@@ -7,31 +7,34 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "controller.labels" . | nindent 4 }}
-  {{- with .Values.service.annotations }}
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
+  podSelector:
+    matchLabels:
+      {{- include "controller.selectorLabels" . | nindent 6 }}
+  policyTypes:
+  - Ingress
+  - Egress
   egress:
   {{- if .Values.tracing.enabled }}
   # pushing tracing spans to a collector
   - to:
-    - ports:
-      - port: {{ .Values.tracing.collector.port }}
-        protocol: TCP
-      to:
     - namespaceSelector:
         matchLabels:
-          name: {{.Values.tracing.collector.namespace }}
+          name: {{.Values.tracing.namespace }}
+    ports:
+    - port: {{ .Values.tracing.port }}
+      protocol: TCP
   {{- end }}
 
   # Kubernetes apiserver access
   - to:
-    - ports:
-      - port: {{ .Values.networkPolicy.kubernetesPort }}
-        protocol: TCP
-    - namespaceSelector:
+    - podSelector: {}
+      namespaceSelector:
         matchLabels:
           name: default
+    ports:
+    - port: {{ .Values.networkPolicy.kubernetesPort }}
+      protocol: TCP
 
   {{- if .Values.networkPolicy.dns }}
   # DNS egress
@@ -39,9 +42,9 @@ spec:
     - podSelector:
         matchLabels:
           k8s-app: kube-dns
-      ports:
-      - port: 53
-        protocol: UDP
+    ports:
+    - port: 53
+      protocol: UDP
   {{- end }}
 
   ingress:
@@ -60,12 +63,5 @@ spec:
       protocol: TCP
   {{- end }}
   {{- end }}
-
-  podSelector:
-    matchLabels:
-      {{- include "controller.selectorLabels" . | nindent 6 }}
-  policyTypes:
-  - Ingress
-  - Egress
 
 {{- end }}

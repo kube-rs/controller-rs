@@ -10,24 +10,31 @@ metadata:
     app.kubernetes.io/name: doc-controller
     app.kubernetes.io/version: "0.12.10"
 spec:
+  podSelector:
+    matchLabels:
+      app: doc-controller
+  policyTypes:
+  - Ingress
+  - Egress
   egress:
 
   # Kubernetes apiserver access
   - to:
-    - ports:
-      - port: 443
-        protocol: TCP
-    - namespaceSelector:
+    - podSelector: {}
+      namespaceSelector:
         matchLabels:
           name: default
+    ports:
+    - port: 6443
+      protocol: TCP
   # DNS egress
   - to:
     - podSelector:
         matchLabels:
           k8s-app: kube-dns
-      ports:
-      - port: 53
-        protocol: UDP
+    ports:
+    - port: 53
+      protocol: UDP
 
   ingress:
   # prometheus metrics scraping support
@@ -41,13 +48,6 @@ spec:
     ports:
     - port: http
       protocol: TCP
-
-  podSelector:
-    matchLabels:
-      app: doc-controller
-  policyTypes:
-  - Ingress
-  - Egress
 ---
 # Source: doc-controller/templates/rbac.yaml
 # Scoped service account
