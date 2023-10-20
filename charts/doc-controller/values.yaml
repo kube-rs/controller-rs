@@ -23,10 +23,26 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# Enable the feature-flagged opentelemetry trace layer pushing over grpc
+# Configure the gRPC opentelemetry push url
 tracing:
-  enabled: false # prefixes tag with otel
-  endpoint: "https://promstack-tempo.monitoring.svc.cluster.local:4317"
+  # Use the telemetry built image and inject OPENTELEMETRY_ENDPOINT_URL
+  enabled: false
+  # namespace of the collector
+  namespace: monitoring
+  # collector service name
+  service: promstack-tempo
+  # collector port for OTLP gRPC
+  port: 4317
+
+networkPolicy:
+  enabled: true
+  kubernetesPort: 443
+  dns: true
+  prometheus:
+    enabled: true
+    namespace: monitoring
+    app: prometheus
+    port: http
 
 logging:
   env_filter: info,kube=debug,controller=debug
