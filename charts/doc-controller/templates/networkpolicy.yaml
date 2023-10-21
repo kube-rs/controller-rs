@@ -33,7 +33,9 @@ spec:
         matchLabels:
           name: default
     ports:
-    - port: {{ .Values.networkPolicy.kubernetesPort }}
+    - port: 443
+      protocol: TCP
+    - port: 6443
       protocol: TCP
 
   {{- if .Values.networkPolicy.dns }}
