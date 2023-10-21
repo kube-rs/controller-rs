@@ -58,7 +58,7 @@ metadata:
   name: doc-controller
 rules:
   - apiGroups: ["kube.rs"]
-    resources: ["documents", "documents/status"]
+    resources: ["documents", "documents/status", "documents/finalizers"]
     verbs: ["get", "list", "watch", "patch"]
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
