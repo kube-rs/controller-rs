@@ -38,10 +38,9 @@ tracing:
 networkPolicy:
   enabled: true
   dns: true
-  # How to reach the apiserver
-  # Takes addresses from "kubectl get endpoints kubernetes -n default"
+  # apiserver access: please scope; take addresses from "kubectl get endpoints kubernetes -n default"
   apiserver:
-  - "10.0.0.0/24" # Wide-open default
+  - "0.0.0.0/0" # extremely wide-open egress on ports 443 + 6443
   prometheus:
     enabled: true
     namespace: monitoring
