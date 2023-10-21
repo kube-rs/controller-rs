@@ -71,8 +71,7 @@ metadata:
 rules:
   - apiGroups: ["kube.rs"]
     resources: ["documents", "documents/status", "documents/finalizers"]
-    #verbs: ["get", "list", "watch", "patch", "update", "delete"]
-    verbs: ["*"]
+    verbs: ["get", "list", "watch", "patch", "update"]
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]
