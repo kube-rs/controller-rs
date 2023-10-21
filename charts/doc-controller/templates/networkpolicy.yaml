@@ -28,8 +28,7 @@ spec:
 
   # Kubernetes apiserver access
   - to:
-    - podSelector: {}
-      namespaceSelector:
+    - namespaceSelector:
         matchLabels:
           name: default
     ports:

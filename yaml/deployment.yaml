@@ -20,11 +20,12 @@ spec:
 
   # Kubernetes apiserver access
   - to:
-    - podSelector: {}
-      namespaceSelector:
+    - namespaceSelector:
         matchLabels:
           name: default
     ports:
+    - port: 443
+      protocol: TCP
     - port: 6443
       protocol: TCP
   # DNS egress
@@ -48,19 +49,6 @@ spec:
     ports:
     - port: http
       protocol: TCP
----
-# Source: doc-controller/templates/rbac.yaml
-# Scoped service account
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: doc-controller
-  labels:
-    app: doc-controller
-    app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.10"
-  namespace: default
-automountServiceAccountToken: true
 ---
 # Source: doc-controller/templates/rbac.yaml
 # Access for the service account

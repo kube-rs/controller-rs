@@ -1,3 +1,4 @@
+{{- if .Values.serviceAccount.create }}
 ---
 # Scoped service account
 apiVersion: v1
@@ -12,6 +13,7 @@ metadata:
   {{- end }}
   namespace: {{ .Values.namespace }}
 automountServiceAccountToken: true
+{{- end }}
 
 ---
 # Access for the service account

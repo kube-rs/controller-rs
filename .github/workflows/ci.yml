@@ -162,7 +162,7 @@ jobs:
       - run: |
           kubectl get svc kubernetes -n default -oyaml
           apiPort=https
-          helm template charts/doc-controller --set version=latest --set networkPolicy.kubernetesPort=${apiPort} | kubectl apply -f -
+          helm template charts/doc-controller --set version=latest --set networkPolicy.kubernetesPort=${apiPort} --set networkPolicy.enabled=false | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
       - run: kubectl apply -f yaml/instance-samuel.yaml
       - run: sleep 2 # TODO: add condition on status and wait for it instead
