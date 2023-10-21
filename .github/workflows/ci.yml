@@ -158,11 +158,18 @@ jobs:
           path: /tmp
       - name: Load docker image from tarball
         run: docker load --input /tmp/image.tar
-      - run: helm template charts/doc-controller --set version=latest | kubectl apply -f -
+      - run: |
+          apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
+          helm template charts/doc-controller \
+            --set version=latest \
+            --set networkPolicy.enabled=true \
+            --set networkPolicy.apiserver.0=${apiserver}/32 \
+            | kubectl apply -f -
       - run: kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
       - run: kubectl apply -f yaml/instance-samuel.yaml
       - run: sleep 2 # TODO: add condition on status and wait for it instead
       # verify reconcile actions have happened
+      - run: kubectl get netpol doc-controller -oyaml
       - run: kubectl logs deploy/doc-controller
       - run: kubectl get event --field-selector "involvedObject.kind=Document,involvedObject.name=samuel" | grep "HideRequested"
       - run: kubectl get doc -oyaml | grep -A1 finalizers | grep documents.kube.rs

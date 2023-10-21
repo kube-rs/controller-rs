@@ -20,14 +20,11 @@ spec:
 
   # Kubernetes apiserver access
   - to:
-    - namespaceSelector:
-        matchLabels:
-          name: default
+    - ipBlock:
+        cidr: 10.0.0.0/24
     ports:
     - port: 443
-      protocol: TCP
     - port: 6443
-      protocol: TCP
   # DNS egress
   - to:
     - podSelector:
@@ -72,7 +69,8 @@ metadata:
 rules:
   - apiGroups: ["kube.rs"]
     resources: ["documents", "documents/status", "documents/finalizers"]
-    verbs: ["get", "list", "watch", "patch", "update"]
+    #verbs: ["get", "list", "watch", "patch", "update", "delete"]
+    verbs: ["*"]
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]

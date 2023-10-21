@@ -28,14 +28,13 @@ spec:
 
   # Kubernetes apiserver access
   - to:
-    - namespaceSelector:
-        matchLabels:
-          name: default
+    - ipBlock:
+    {{- range .Values.networkPolicy.apiserver }}
+        cidr: {{ . }}
+    {{- end }}
     ports:
     - port: 443
-      protocol: TCP
     - port: 6443
-      protocol: TCP
 
   {{- if .Values.networkPolicy.dns }}
   # DNS egress
