@@ -1,3 +1,4 @@
+{{- if .Values.serviceAccount.create }}
 ---
 # Scoped service account
 apiVersion: v1
@@ -12,6 +13,7 @@ metadata:
   {{- end }}
   namespace: {{ .Values.namespace }}
 automountServiceAccountToken: true
+{{- end }}
 
 ---
 # Access for the service account
@@ -21,8 +23,8 @@ metadata:
   name: {{ include "controller.fullname" . }}
 rules:
   - apiGroups: ["kube.rs"]
-    resources: ["documents", "documents/status"]
-    verbs: ["get", "list", "watch", "patch"]
+    resources: ["documents", "documents/status", "documents/finalizers"]
+    verbs: ["get", "list", "watch", "patch", "update"]
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]

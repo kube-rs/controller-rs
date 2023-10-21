@@ -34,7 +34,7 @@ spec:
   jobLabel: {{ include "controller.fullname" . }}
   selector:
     matchLabels:
-      app: {{ include "controller.fullname" . }}
+      {{- include "controller.selectorLabels" . | nindent 6 }}
   namespaceSelector:
     matchNames:
       - {{ .Values.namespace }}
