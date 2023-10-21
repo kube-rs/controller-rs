@@ -37,7 +37,6 @@ tracing:
 
 networkPolicy:
   enabled: true
-  kubernetesPort: 6443
   dns: true
   prometheus:
     enabled: true
