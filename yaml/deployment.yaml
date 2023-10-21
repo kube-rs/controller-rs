@@ -51,6 +51,19 @@ spec:
       protocol: TCP
 ---
 # Source: doc-controller/templates/rbac.yaml
+# Scoped service account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: doc-controller
+  labels:
+    app: doc-controller
+    app.kubernetes.io/name: doc-controller
+    app.kubernetes.io/version: "0.12.10"
+  namespace: default
+automountServiceAccountToken: true
+---
+# Source: doc-controller/templates/rbac.yaml
 # Access for the service account
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
