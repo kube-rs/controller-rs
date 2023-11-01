@@ -8,7 +8,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.10"
+    app.kubernetes.io/version: "0.12.11"
 spec:
   podSelector:
     matchLabels:
@@ -58,7 +58,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.10"
+    app.kubernetes.io/version: "0.12.11"
   namespace: default
 automountServiceAccountToken: true
 ---
@@ -101,7 +101,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.10"
+    app.kubernetes.io/version: "0.12.11"
 spec:
   type: ClusterIP
   ports:
@@ -121,7 +121,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.12.10"
+    app.kubernetes.io/version: "0.12.11"
 spec:
   replicas: 1
   selector:
@@ -139,7 +139,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: clux/controller:0.12.10
+        image: clux/controller:0.12.11
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
