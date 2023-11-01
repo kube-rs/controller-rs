@@ -53,10 +53,10 @@ tower-test = "0.4.0"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive" ]
-#version = "0.86.0"
+version = "0.87.1"
 
 # testing new releases - ignore
-git = "https://github.com/kube-rs/kube.git"
-branch = "main"
+#git = "https://github.com/kube-rs/kube.git"
+#branch = "main"
 #rev = "19b90ad3a4dbc83e1dd742847c7707333259b1bb"
 #path = "../kube/kube"

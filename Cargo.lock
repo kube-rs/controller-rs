@@ -1116,8 +1116,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.86.0"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#17f1cb595dadd915bd93f289ac728209111398d3"
+version = "0.87.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e34392aea935145070dcd5b39a6dea689ac6534d7d117461316c3d157b1d0fc3"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1128,8 +1129,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.86.0"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#17f1cb595dadd915bd93f289ac728209111398d3"
+version = "0.87.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7266548b9269d9fa19022620d706697e64f312fb2ba31b93e6986453fcc82c92"
 dependencies = [
  "base64",
  "bytes",
@@ -1163,8 +1165,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.86.0"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#17f1cb595dadd915bd93f289ac728209111398d3"
+version = "0.87.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8321c315b96b59f59ef6b33f604b84b905ab8f9ff114a4f909d934c520227b1"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1180,8 +1183,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.86.0"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#17f1cb595dadd915bd93f289ac728209111398d3"
+version = "0.87.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54591e1f37fc329d412c0fdaced010cc1305b546a39f283fc51700f8fb49421"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1192,8 +1196,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.86.0"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#17f1cb595dadd915bd93f289ac728209111398d3"
+version = "0.87.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e511e2c1a368d9d4bf6e70db58197e535d818df355b5a2007a8aeb17a370a8ba"
 dependencies = [
  "ahash",
  "async-trait",
