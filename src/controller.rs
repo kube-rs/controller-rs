@@ -12,6 +12,7 @@ use kube::{
     },
     CustomResource, Resource,
 };
+use miette::{ErrReport, IntoDiagnostic, WrapErr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -77,7 +78,12 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 }
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
-    warn!("reconcile failed: {:?}", error);
+    // TODO: kube error can't get into diagnostic'd here because:
+    // a) need a Result due to how IntoDiagnostic works
+    // b) we need an owned Error for a Result, so we have to clone
+    // c) kube Error doesn't have Clone so we can't impl on our Error
+    // => we can't satisfy the 'static bound without modifying kube afaikt
+    warn!("reconcile failed: {:#}", error);
     ctx.metrics.reconcile_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
 }
@@ -197,15 +203,22 @@ impl State {
     }
 }
 
-/// Initialize the controller and shared state (given the crd is installed)
-pub async fn run(state: State) {
-    let client = Client::try_default().await.expect("failed to create kube Client");
+/// Construct a kube::Client and verify the CRD is installed
+pub async fn verify() -> miette::Result<Client> {
+    let client = Client::try_default().await.into_diagnostic()?;
     let docs = Api::<Document>::all(client.clone());
-    if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
-        error!("CRD is not queryable; {e:?}. Is the CRD installed?");
-        info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
-        std::process::exit(1);
-    }
+    docs.list(&ListParams::default().limit(1))
+        .await
+        .into_diagnostic()
+        .wrap_err(
+            "CRD is not queryable. Is the CRD installed? Run: cargo run --bin crdgen | kubectl apply -f -",
+        )?;
+    Ok(client)
+}
+
+/// Start the Controller from state
+pub async fn run(client: Client, state: State) {
+    let docs = Api::<Document>::all(client.clone());
     Controller::new(docs, Config::default().any_semantic())
         .shutdown_on_signal()
         .run(reconcile, error_policy, state.to_context(client))

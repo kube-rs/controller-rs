@@ -42,8 +42,9 @@ tracing-opentelemetry = "0.20.0"
 opentelemetry = { version = "0.20.0", features = ["trace", "rt-tokio"] }
 opentelemetry-otlp = { version = "0.13.0", features = ["tokio"], optional = true }
 tonic = { version = "0.9", optional = true }
-thiserror = "1.0.47"
 anyhow = "1.0.75"
+miette = { version = "5.10.0", features = ["fancy"] }
+thiserror = "1.0.56"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
