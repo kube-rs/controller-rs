@@ -197,15 +197,23 @@ impl State {
     }
 }
 
-/// Initialize the controller and shared state (given the crd is installed)
-pub async fn run(state: State) {
-    let client = Client::try_default().await.expect("failed to create kube Client");
+/// Construct a kube::Client and verify the CRD is installed
+pub async fn verify() -> miette::Result<Client> {
+    use miette::{IntoDiagnostic, WrapErr};
+    let client = Client::try_default().await.into_diagnostic()?;
     let docs = Api::<Document>::all(client.clone());
-    if let Err(e) = docs.list(&ListParams::default().limit(1)).await {
-        error!("CRD is not queryable; {e:?}. Is the CRD installed?");
-        info!("Installation: cargo run --bin crdgen | kubectl apply -f -");
-        std::process::exit(1);
-    }
+    docs.list(&ListParams::default().limit(1))
+        .await
+        .into_diagnostic()
+        .wrap_err(
+            "CRD is not queryable. Is the CRD installed? Run: cargo run --bin crdgen | kubectl apply -f -",
+        )?;
+    Ok(client)
+}
+
+/// Start the Controller from state
+pub async fn run(client: Client, state: State) {
+    let docs = Api::<Document>::all(client.clone());
     Controller::new(docs, Config::default().any_semantic())
         .shutdown_on_signal()
         .run(reconcile, error_policy, state.to_context(client))

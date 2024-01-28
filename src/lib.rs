@@ -1,6 +1,7 @@
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum Error {
     #[error("SerializationError: {0}")]
     SerializationError(#[source] serde_json::Error),
