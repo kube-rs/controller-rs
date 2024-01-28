@@ -17,7 +17,7 @@ pub enum Error {
     #[error("IllegalDocument")]
     IllegalDocument,
 }
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = miette::Result<T, E>;
 
 impl Error {
     pub fn metric_label(&self) -> String {
@@ -36,4 +36,5 @@ pub mod telemetry;
 mod metrics;
 pub use metrics::Metrics;
 
-#[cfg(test)] pub mod fixtures;
+#[cfg(test)]
+pub mod fixtures;

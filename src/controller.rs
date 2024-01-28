@@ -12,6 +12,7 @@ use kube::{
     },
     CustomResource, Resource,
 };
+use miette::{ErrReport, IntoDiagnostic, WrapErr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -77,7 +78,12 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 }
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
-    warn!("reconcile failed: {:?}", error);
+    // TODO: kube error can't get into diagnostic'd here because:
+    // a) need a Result due to how IntoDiagnostic works
+    // b) we need an owned Error for a Result, so we have to clone
+    // c) kube Error doesn't have Clone so we can't impl on our Error
+    // => we can't satisfy the 'static bound without modifying kube afaikt
+    warn!("reconcile failed: {:#}", error);
     ctx.metrics.reconcile_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
 }
@@ -199,7 +205,6 @@ impl State {
 
 /// Construct a kube::Client and verify the CRD is installed
 pub async fn verify() -> miette::Result<Client> {
-    use miette::{IntoDiagnostic, WrapErr};
     let client = Client::try_default().await.into_diagnostic()?;
     let docs = Api::<Document>::all(client.clone());
     docs.list(&ListParams::default().limit(1))
