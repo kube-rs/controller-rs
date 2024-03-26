@@ -1206,8 +1206,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.88.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#89b9e5f59927fed5075fa77a9784dab4a025a7be"
+version = "0.89.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92cd10d00ad38b2f72a5223cd8f2827968466a5d32ae89672d2b0df06488c499"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1218,8 +1219,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.88.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#89b9e5f59927fed5075fa77a9784dab4a025a7be"
+version = "0.89.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23b4ee4e409c9afb4e38a30802875acb108902387a41346bbc2fd8610df5f729"
 dependencies = [
  "base64 0.22.0",
  "bytes",
@@ -1255,8 +1257,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.88.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#89b9e5f59927fed5075fa77a9784dab4a025a7be"
+version = "0.89.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "beab9186726ed0c2420ff8a37b02f26dc62b3c33330ac60d0cc7605e1a6f6678"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1272,8 +1275,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.88.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#89b9e5f59927fed5075fa77a9784dab4a025a7be"
+version = "0.89.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81b62b967344f8b961583480e4173b7c55bd448c700c71b0b780abbfc2dcda31"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1284,8 +1288,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.88.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#89b9e5f59927fed5075fa77a9784dab4a025a7be"
+version = "0.89.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16f0c0463270c844ff08e8a674777289afdb4cc6063036bed5dc35107f135808"
 dependencies = [
  "ahash",
  "async-trait",
