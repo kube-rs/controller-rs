@@ -128,7 +128,7 @@ impl ApiServerVerifier {
             { "op": "test", "path": "/metadata/finalizers", "value": null },
             { "op": "add", "path": "/metadata/finalizers", "value": vec![DOCUMENT_FINALIZER] }
         ]);
-        let req_body = request.into_body().collect().await.unwrap().to_bytes();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let runtime_patch: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid document from runtime");
         assert_json_include!(actual: runtime_patch, expected: expected_patch);
@@ -153,7 +153,7 @@ impl ApiServerVerifier {
             { "op": "test", "path": "/metadata/finalizers/0", "value": DOCUMENT_FINALIZER },
             { "op": "remove", "path": "/metadata/finalizers/0", "path": "/metadata/finalizers/0" }
         ]);
-        let req_body = request.into_body().collect_bytes().await?;
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let runtime_patch: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid document from runtime");
         assert_json_include!(actual: runtime_patch, expected: expected_patch);
@@ -171,7 +171,7 @@ impl ApiServerVerifier {
             format!("/apis/events.k8s.io/v1/namespaces/default/events?")
         );
         // verify the event reason matches the expected
-        let req_body = request.into_body().collect().await.unwrap().to_bytes();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let postdata: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid event from runtime");
         dbg!("postdata for event: {}", postdata.clone());
@@ -194,7 +194,7 @@ impl ApiServerVerifier {
                 doc.name_any()
             )
         );
-        let req_body = request.into_body().collect().await.unwrap().to_bytes();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let json: serde_json::Value = serde_json::from_slice(&req_body).expect("patch_status object is json");
         let status_json = json.get("status").expect("status object").clone();
         let status: DocumentStatus = serde_json::from_value(status_json).expect("valid status");
