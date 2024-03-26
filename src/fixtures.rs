@@ -153,7 +153,7 @@ impl ApiServerVerifier {
             { "op": "test", "path": "/metadata/finalizers/0", "value": DOCUMENT_FINALIZER },
             { "op": "remove", "path": "/metadata/finalizers/0", "path": "/metadata/finalizers/0" }
         ]);
-        let req_body = request.into_body().collect().await.unwrap().to_bytes();
+        let req_body = request.into_body().collect_bytes().await?;
         let runtime_patch: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid document from runtime");
         assert_json_include!(actual: runtime_patch, expected: expected_patch);
