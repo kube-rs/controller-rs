@@ -2,7 +2,6 @@
 use crate::{Context, Document, DocumentSpec, DocumentStatus, Metrics, Result, DOCUMENT_FINALIZER};
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
-use http_body_util::BodyExt;
 use kube::{client::Body, Client, Resource, ResourceExt};
 use prometheus::Registry;
 use std::sync::Arc;

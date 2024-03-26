@@ -48,16 +48,15 @@ anyhow = "1.0.75"
 [dev-dependencies]
 assert-json-diff = "2.0.2"
 http = "1"
-http-body-util = "0.1.1"
 hyper = "1"
 tower-test = "0.4.0"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive" ]
-version = "0.89.0"
+#version = "0.89.0"
 
 # testing new releases - ignore
 #git = "https://github.com/kube-rs/kube.git"
 #branch = "main"
 #rev = "19b90ad3a4dbc83e1dd742847c7707333259b1bb"
-#path = "../kube/kube"
+path = "../kube/kube"
