@@ -270,11 +270,9 @@ mod test {
         assert!(err.to_string().contains("IllegalDocument"));
         // calling error policy with the reconciler error should cause the correct metric to be set
         error_policy(doc.clone(), &err, testctx.clone());
-        //dbg!("actual metrics: {}", registry.gather());
         let metrics = &testctx.metrics.reconciler;
-        // TODO: this currently does not work
-        //let failures = metrics.get_failures("illegal", "finalizererror(applyfailed(illegaldocument))");
-        //assert_eq!(failures, 1);
+        let failures = metrics.get_failures("illegal", "finalizererror(applyfailed(illegaldocument))");
+        assert_eq!(failures, 1);
     }
 
     // Integration test without mocks

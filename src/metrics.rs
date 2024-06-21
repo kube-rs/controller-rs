@@ -63,8 +63,10 @@ impl ReconcilerMetrics {
     }
 
     #[cfg(test)]
-    pub fn get_failures(&self, instance: &str, error: &str) -> () {
-        // TODO: how to make this work?
-        //self.failures.get_metric(ErrorLabelSet::new(instance, error))
+    pub fn get_failures(&self, instance: &str, error: &str) -> u64 {
+        let labels = ErrorLabels { instance, error };
+        // awkward, but it gets the job done for tests
+        let metric = self.failures.get_metric(self.failures.with_labels(labels));
+        metric.count.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
