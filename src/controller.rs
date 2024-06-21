@@ -53,14 +53,14 @@ pub struct Context {
     /// Diagnostics read by the web server
     pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
-    pub metrics: Metrics,
+    pub metrics: Arc<Metrics>,
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
 async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
-    let _timer = ctx.metrics.count_and_measure();
+    let _timer = ctx.metrics.app.reconciler.count_and_measure();
     ctx.diagnostics.write().await.last_event = Utc::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
@@ -78,7 +78,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconcile_failure(&doc, error);
+    ctx.metrics.app.reconciler.set_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -171,15 +171,15 @@ impl Diagnostics {
 pub struct State {
     /// Diagnostics populated by the reconciler
     diagnostics: Arc<RwLock<Diagnostics>>,
-    /// Metrics registry
-    registry: prometheus::Registry,
+    /// Metrics and encoder
+    metrics: Arc<Metrics>,
 }
 
 /// State wrapper around the controller outputs for the web server
 impl State {
     /// Metrics getter
-    pub fn metrics(&self) -> Vec<prometheus::proto::MetricFamily> {
-        self.registry.gather()
+    pub fn metrics(&self) -> Arc<Metrics> {
+        self.metrics.clone()
     }
 
     /// State getter
@@ -191,7 +191,7 @@ impl State {
     pub fn to_context(&self, client: Client) -> Arc<Context> {
         Arc::new(Context {
             client,
-            metrics: Metrics::default().register(&self.registry).unwrap(),
+            metrics: self.metrics.clone(),
             diagnostics: self.diagnostics.clone(),
         })
     }
@@ -223,7 +223,7 @@ mod test {
 
     #[tokio::test]
     async fn documents_without_finalizer_gets_a_finalizer() {
-        let (testctx, fakeserver, _) = Context::test();
+        let (testctx, fakeserver) = Context::test();
         let doc = Document::test();
         let mocksrv = fakeserver.run(Scenario::FinalizerCreation(doc.clone()));
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
@@ -232,7 +232,7 @@ mod test {
 
     #[tokio::test]
     async fn finalized_doc_causes_status_patch() {
-        let (testctx, fakeserver, _) = Context::test();
+        let (testctx, fakeserver) = Context::test();
         let doc = Document::test().finalized();
         let mocksrv = fakeserver.run(Scenario::StatusPatch(doc.clone()));
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
@@ -241,7 +241,7 @@ mod test {
 
     #[tokio::test]
     async fn finalized_doc_with_hide_causes_event_and_hide_patch() {
-        let (testctx, fakeserver, _) = Context::test();
+        let (testctx, fakeserver) = Context::test();
         let doc = Document::test().finalized().needs_hide();
         let scenario = Scenario::EventPublishThenStatusPatch("HideRequested".into(), doc.clone());
         let mocksrv = fakeserver.run(scenario);
@@ -251,7 +251,7 @@ mod test {
 
     #[tokio::test]
     async fn finalized_doc_with_delete_timestamp_causes_delete() {
-        let (testctx, fakeserver, _) = Context::test();
+        let (testctx, fakeserver) = Context::test();
         let doc = Document::test().finalized().needs_delete();
         let mocksrv = fakeserver.run(Scenario::Cleanup("DeleteRequested".into(), doc.clone()));
         reconcile(Arc::new(doc), testctx).await.expect("reconciler");
@@ -260,7 +260,7 @@ mod test {
 
     #[tokio::test]
     async fn illegal_doc_reconcile_errors_which_bumps_failure_metric() {
-        let (testctx, fakeserver, _registry) = Context::test();
+        let (testctx, fakeserver) = Context::test();
         let doc = Arc::new(Document::illegal().finalized());
         let mocksrv = fakeserver.run(Scenario::RadioSilence);
         let res = reconcile(doc.clone(), testctx.clone()).await;
@@ -270,12 +270,8 @@ mod test {
         assert!(err.to_string().contains("IllegalDocument"));
         // calling error policy with the reconciler error should cause the correct metric to be set
         error_policy(doc.clone(), &err, testctx.clone());
-        //dbg!("actual metrics: {}", registry.gather());
-        let failures = testctx
-            .metrics
-            .failures
-            .with_label_values(&["illegal", "finalizererror(applyfailed(illegaldocument))"])
-            .get();
+        let metrics = &testctx.metrics.app.reconciler;
+        let failures = metrics.get_failures("illegal", "finalizererror(applyfailed(illegaldocument))");
         assert_eq!(failures, 1);
     }
 

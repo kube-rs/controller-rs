@@ -1,15 +1,15 @@
 #![allow(unused_imports, unused_variables)]
 use actix_web::{get, middleware, web::Data, App, HttpRequest, HttpResponse, HttpServer, Responder};
-pub use controller::{self, telemetry, State};
-use prometheus::{Encoder, TextEncoder};
+pub use controller::{self, telemetry, Metrics, State};
 
 #[get("/metrics")]
 async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
-    let metrics = c.metrics();
-    let encoder = TextEncoder::new();
-    let mut buffer = vec![];
-    encoder.encode(&metrics, &mut buffer).unwrap();
-    HttpResponse::Ok().body(buffer)
+    use measured::metric::group::MetricGroup;
+    let Metrics { encoder, app } = &*c.metrics();
+    let mut encoder = encoder.lock().await;
+    app.collect_group_into(&mut *encoder).unwrap();
+    let bytes = encoder.finish();
+    HttpResponse::Ok().body(bytes)
 }
 
 #[get("/health")]
