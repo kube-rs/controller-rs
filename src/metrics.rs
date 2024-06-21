@@ -1,36 +1,26 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
-use prometheus::{histogram_opts, opts, HistogramVec, IntCounter, IntCounterVec, Registry};
+use prometheus_client::{
+    encoding::EncodeLabelSet,
+    metrics::counter::{Atomic, Counter},
+    metrics::family::Family,
+    metrics::histogram::Histogram,
+    registry::Registry,
+};
 use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct Metrics {
-    pub reconciliations: IntCounter,
-    pub failures: IntCounterVec,
-    pub reconcile_duration: HistogramVec,
+    pub reconciliations: Counter,
+    pub failures: Counter,
+    pub reconcile_duration: Histogram,
 }
 
 impl Default for Metrics {
     fn default() -> Self {
-        let reconcile_duration = HistogramVec::new(
-            histogram_opts!(
-                "doc_controller_reconcile_duration_seconds",
-                "The duration of reconcile to complete in seconds"
-            )
-            .buckets(vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]),
-            &[],
-        )
-        .unwrap();
-        let failures = IntCounterVec::new(
-            opts!(
-                "doc_controller_reconciliation_errors_total",
-                "reconciliation errors",
-            ),
-            &["instance", "error"],
-        )
-        .unwrap();
-        let reconciliations =
-            IntCounter::new("doc_controller_reconciliations_total", "reconciliations").unwrap();
+        let reconcile_duration = Histogram::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter());
+        let failures = Family::<ErrorLabels, Counter>::default();
+        let reconciliations = Family::<(), Counter>::default();
         Metrics {
             reconciliations,
             failures,
@@ -39,12 +29,30 @@ impl Default for Metrics {
     }
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+struct ErrorLabels {
+    instance: String,
+    errror: String,
+}
+
 impl Metrics {
     /// Register API metrics to start tracking them.
-    pub fn register(self, registry: &Registry) -> Result<Self, prometheus::Error> {
-        registry.register(Box::new(self.reconcile_duration.clone()))?;
-        registry.register(Box::new(self.failures.clone()))?;
-        registry.register(Box::new(self.reconciliations.clone()))?;
+    pub fn register(self, registry: &Registry) -> Self {
+        registry.register(
+            "doc_controller_reconcile_duration_seconds",
+            "The duration of reconcile to complete in seconds",
+            self.reconcile_duration.clone(),
+        );
+        registry.register(
+            "doc_controller_reconciliation_errors_total",
+            "reconciliation errors",
+            self.failures.clone(),
+        );
+        registry.register(
+            "doc_controller_reconciliations_total",
+            "reconciliations",
+            self.reconciliations.clone(),
+        );
         Ok(self)
     }
 
@@ -68,7 +76,7 @@ impl Metrics {
 /// Relies on Drop to calculate duration and register the observation in the histogram
 pub struct ReconcileMeasurer {
     start: Instant,
-    metric: HistogramVec,
+    metric: Histogram,
 }
 
 impl Drop for ReconcileMeasurer {

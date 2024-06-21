@@ -172,7 +172,7 @@ pub struct State {
     /// Diagnostics populated by the reconciler
     diagnostics: Arc<RwLock<Diagnostics>>,
     /// Metrics registry
-    registry: prometheus::Registry,
+    registry: Registry,
 }
 
 /// State wrapper around the controller outputs for the web server
