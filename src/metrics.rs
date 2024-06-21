@@ -17,12 +17,15 @@ pub struct Metrics {
 #[metric(new())]
 pub struct ReconcilerMetrics {
     /// reconciliations
+    #[metric(rename = "doc_controller_reconciliations_total")]
     #[metric(label_set = EmptyLabelSet::default())]
     pub reconciliations: CounterVec<EmptyLabelSet>,
     /// reconciliation errors
+    #[metric(rename = "doc_controller_reconciliation_errors_total")]
     #[metric(label_set = ErrorLabelSet::new())]
     pub failures: CounterVec<ErrorLabelSet>,
     /// duration of reconcile to complete in seconds
+    #[metric(rename = "doc_controller_reconcile_duration_seconds")]
     #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]))]
     pub reconcile_duration: HistogramVec<EmptyLabelSet, 8>,
 }
