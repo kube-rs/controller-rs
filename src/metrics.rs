@@ -1,80 +1,67 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
-use prometheus::{histogram_opts, opts, HistogramVec, IntCounter, IntCounterVec, Registry};
-use tokio::time::Instant;
+use measured::{
+    metric::histogram::{HistogramVecTimer, Thresholds},
+    text::BufferedTextEncoder,
+    CounterVec, HistogramVec, LabelGroup, MetricGroup,
+};
+use tokio::sync::Mutex;
 
-#[derive(Clone)]
+#[derive(Default)]
 pub struct Metrics {
-    pub reconciliations: IntCounter,
-    pub failures: IntCounterVec,
-    pub reconcile_duration: HistogramVec,
+    pub encoder: Mutex<BufferedTextEncoder>,
+    pub reconciler: ReconcilerMetrics,
 }
 
-impl Default for Metrics {
+#[derive(MetricGroup)]
+#[metric(new())]
+pub struct ReconcilerMetrics {
+    /// reconciliations
+    #[metric(label_set = EmptyLabelSet::default())]
+    pub reconciliations: CounterVec<EmptyLabelSet>,
+    /// reconciliation errors
+    #[metric(label_set = ErrorLabelSet::new())]
+    pub failures: CounterVec<ErrorLabelSet>,
+    /// duration of reconcile to complete in seconds
+    #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]))]
+    pub reconcile_duration: HistogramVec<EmptyLabelSet, 8>,
+}
+
+#[derive(LabelGroup)]
+#[label(set = ErrorLabelSet)]
+pub struct ErrorLabels<'a> {
+    #[label(dynamic_with = lasso::ThreadedRodeo, default)]
+    instance: &'a str,
+    #[label(dynamic_with = lasso::ThreadedRodeo, default)]
+    error: &'a str,
+}
+
+#[derive(LabelGroup, Default)]
+#[label(set = EmptyLabelSet)]
+pub struct EmptyLabels {}
+
+impl Default for ReconcilerMetrics {
     fn default() -> Self {
-        let reconcile_duration = HistogramVec::new(
-            histogram_opts!(
-                "doc_controller_reconcile_duration_seconds",
-                "The duration of reconcile to complete in seconds"
-            )
-            .buckets(vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]),
-            &[],
-        )
-        .unwrap();
-        let failures = IntCounterVec::new(
-            opts!(
-                "doc_controller_reconciliation_errors_total",
-                "reconciliation errors",
-            ),
-            &["instance", "error"],
-        )
-        .unwrap();
-        let reconciliations =
-            IntCounter::new("doc_controller_reconciliations_total", "reconciliations").unwrap();
-        Metrics {
-            reconciliations,
-            failures,
-            reconcile_duration,
-        }
+        ReconcilerMetrics::new()
     }
 }
 
-impl Metrics {
-    /// Register API metrics to start tracking them.
-    pub fn register(self, registry: &Registry) -> Result<Self, prometheus::Error> {
-        registry.register(Box::new(self.reconcile_duration.clone()))?;
-        registry.register(Box::new(self.failures.clone()))?;
-        registry.register(Box::new(self.reconciliations.clone()))?;
-        Ok(self)
+impl ReconcilerMetrics {
+    pub fn set_failure(&self, doc: &Document, e: &Error) {
+        self.failures.inc(ErrorLabels {
+            instance: doc.name_any().as_ref(),
+            error: e.metric_label().as_ref(),
+        })
     }
 
-    pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
-        self.failures
-            .with_label_values(&[doc.name_any().as_ref(), e.metric_label().as_ref()])
-            .inc()
+    pub fn count_and_measure(&self) -> HistogramVecTimer<'_, EmptyLabelSet, 8> {
+        self.reconciliations.inc(EmptyLabels::default());
+        self.reconcile_duration.start_timer(EmptyLabels::default())
     }
 
-    pub fn count_and_measure(&self) -> ReconcileMeasurer {
-        self.reconciliations.inc();
-        ReconcileMeasurer {
-            start: Instant::now(),
-            metric: self.reconcile_duration.clone(),
-        }
-    }
-}
-
-/// Smart function duration measurer
-///
-/// Relies on Drop to calculate duration and register the observation in the histogram
-pub struct ReconcileMeasurer {
-    start: Instant,
-    metric: HistogramVec,
-}
-
-impl Drop for ReconcileMeasurer {
-    fn drop(&mut self) {
-        #[allow(clippy::cast_precision_loss)]
-        let duration = self.start.elapsed().as_millis() as f64 / 1000.0;
-        self.metric.with_label_values(&[]).observe(duration);
+    #[cfg(test)]
+    pub fn get_failures(&self, instance: &str, error: &str) -> () {
+        // TODO: how to make this work?
+        //self.failures.get_metric(ErrorLabelSet::new(instance, error))
     }
 }
