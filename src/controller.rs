@@ -12,6 +12,7 @@ use kube::{
     },
     CustomResource, Resource,
 };
+use prometheus_client::registry::Registry;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -53,7 +54,7 @@ pub struct Context {
     /// Diagnostics read by the web server
     pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
-    pub metrics: Metrics,
+    pub metrics: Arc<Metrics>,
 }
 
 #[instrument(skip(ctx, doc), fields(trace_id))]
@@ -172,14 +173,16 @@ pub struct State {
     /// Diagnostics populated by the reconciler
     diagnostics: Arc<RwLock<Diagnostics>>,
     /// Metrics registry
-    registry: Registry,
+    registry: Arc<Registry>,
 }
 
 /// State wrapper around the controller outputs for the web server
 impl State {
     /// Metrics getter
-    pub fn metrics(&self) -> Vec<prometheus::proto::MetricFamily> {
-        self.registry.gather()
+    pub fn metrics(&self) -> String {
+        let mut buffer = String::new();
+        prometheus_client::encoding::text::encode(&mut buffer, &self.registry).unwrap();
+        buffer
     }
 
     /// State getter
@@ -191,7 +194,7 @@ impl State {
     pub fn to_context(&self, client: Client) -> Arc<Context> {
         Arc::new(Context {
             client,
-            metrics: Metrics::default().register(&self.registry).unwrap(),
+            metrics: Arc::new(Metrics::default().register(&self.registry)),
             diagnostics: self.diagnostics.clone(),
         })
     }

@@ -2,17 +2,19 @@ use crate::{Document, Error};
 use kube::ResourceExt;
 use prometheus_client::{
     encoding::EncodeLabelSet,
-    metrics::counter::{Atomic, Counter},
-    metrics::family::Family,
-    metrics::histogram::Histogram,
+    metrics::{
+        counter::{Atomic, Counter},
+        family::Family,
+        histogram::Histogram,
+    },
     registry::Registry,
 };
 use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct Metrics {
-    pub reconciliations: Counter,
-    pub failures: Counter,
+    pub reconciliations: Family<(), Counter>,
+    pub failures: Family<ErrorLabels, Counter>,
     pub reconcile_duration: Histogram,
 }
 
@@ -32,7 +34,7 @@ impl Default for Metrics {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 struct ErrorLabels {
     instance: String,
-    errror: String,
+    error: String,
 }
 
 impl Metrics {
@@ -53,17 +55,20 @@ impl Metrics {
             "reconciliations",
             self.reconciliations.clone(),
         );
-        Ok(self)
+        self
     }
 
     pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
         self.failures
-            .with_label_values(&[doc.name_any().as_ref(), e.metric_label().as_ref()])
-            .inc()
+            .get_or_create(&ErrorLabels {
+                instance: doc.name_any(),
+                error: e.metric_label(),
+            })
+            .inc();
     }
 
     pub fn count_and_measure(&self) -> ReconcileMeasurer {
-        self.reconciliations.inc();
+        self.reconciliations.get_or_create(&()).inc();
         ReconcileMeasurer {
             start: Instant::now(),
             metric: self.reconcile_duration.clone(),
@@ -83,6 +88,6 @@ impl Drop for ReconcileMeasurer {
     fn drop(&mut self) {
         #[allow(clippy::cast_precision_loss)]
         let duration = self.start.elapsed().as_millis() as f64 / 1000.0;
-        self.metric.with_label_values(&[]).observe(duration);
+        self.metric.observe(duration);
     }
 }
