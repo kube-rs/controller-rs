@@ -2,47 +2,59 @@ use crate::{Document, Error};
 use kube::ResourceExt;
 use prometheus_client::{
     encoding::EncodeLabelSet,
-    metrics::{
-        counter::{Atomic, Counter},
-        family::Family,
-        histogram::Histogram,
-    },
-    registry::Registry,
+    metrics::{counter::Counter, family::Family, histogram::Histogram},
+    registry::{Registry, Unit},
 };
+use std::sync::Arc;
 use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct Metrics {
+    pub reconciler: Reconciler,
+    pub registry: Arc<Registry>,
+}
+
+impl Default for Metrics {
+    fn default() -> Self {
+        let mut registry = Registry::with_prefix("doc_ctrl_");
+        let reconciler = Reconciler::default().register(&mut registry);
+        Self {
+            registry: Arc::new(registry),
+            reconciler,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Reconciler {
     pub reconciliations: Family<(), Counter>,
     pub failures: Family<ErrorLabels, Counter>,
     pub reconcile_duration: Histogram,
 }
 
-impl Default for Metrics {
+impl Default for Reconciler {
     fn default() -> Self {
-        let reconcile_duration = Histogram::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter());
-        let failures = Family::<ErrorLabels, Counter>::default();
-        let reconciliations = Family::<(), Counter>::default();
-        Metrics {
-            reconciliations,
-            failures,
-            reconcile_duration,
+        Reconciler {
+            reconciliations: Family::<(), Counter>::default(),
+            failures: Family::<ErrorLabels, Counter>::default(),
+            reconcile_duration: Histogram::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter()),
         }
     }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
-struct ErrorLabels {
-    instance: String,
-    error: String,
+pub struct ErrorLabels {
+    pub instance: String,
+    pub error: String,
 }
 
-impl Metrics {
+impl Reconciler {
     /// Register API metrics to start tracking them.
-    pub fn register(self, registry: &Registry) -> Self {
-        registry.register(
-            "doc_controller_reconcile_duration_seconds",
+    pub fn register(self, registry: &mut Registry) -> Self {
+        registry.register_with_unit(
+            "doc_controller_ reconcile_duration_seconds",
             "The duration of reconcile to complete in seconds",
+            Unit::Seconds,
             self.reconcile_duration.clone(),
         );
         registry.register(
@@ -58,7 +70,7 @@ impl Metrics {
         self
     }
 
-    pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
+    pub fn set_failure(&self, doc: &Document, e: &Error) {
         self.failures
             .get_or_create(&ErrorLabels {
                 instance: doc.name_any(),
