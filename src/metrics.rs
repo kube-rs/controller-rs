@@ -16,7 +16,7 @@ pub struct Metrics {
 
 impl Default for Metrics {
     fn default() -> Self {
-        let mut registry = Registry::with_prefix("doc_ctrl_");
+        let mut registry = Registry::with_prefix("doc_ctrl");
         let reconciler = Reconciler::default().register(&mut registry);
         Self {
             registry: Arc::new(registry),
@@ -52,18 +52,18 @@ impl Reconciler {
     /// Register API metrics to start tracking them.
     pub fn register(self, registry: &mut Registry) -> Self {
         registry.register_with_unit(
-            "doc_controller_ reconcile_duration_seconds",
+            "reconcile_duration_seconds",
             "The duration of reconcile to complete in seconds",
             Unit::Seconds,
             self.reconcile_duration.clone(),
         );
         registry.register(
-            "doc_controller_reconciliation_errors_total",
+            "reconciliation_errors_total",
             "reconciliation errors",
             self.failures.clone(),
         );
         registry.register(
-            "doc_controller_reconciliations_total",
+            "reconciliations_total",
             "reconciliations",
             self.reconciliations.clone(),
         );
