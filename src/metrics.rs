@@ -21,7 +21,6 @@ pub struct ReconcilerMetrics {
     pub reconciliations: Counter,
     /// reconciliation errors
     #[metric(rename = "doc_controller_reconciliation_errors_total")]
-    #[metric(label_set = ErrorLabelSet::new())]
     pub failures: CounterVec<ErrorLabelSet>,
     /// duration of reconcile to complete in seconds
     #[metric(rename = "doc_controller_reconcile_duration_seconds")]
