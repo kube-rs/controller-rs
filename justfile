@@ -12,7 +12,7 @@ generate:
 
 # run with opentelemetry
 run-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
+  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:55680 RUST_LOG=info,kube=debug,controller=debug cargo run --features=telemetry
 
 # run without opentelemetry
 run:

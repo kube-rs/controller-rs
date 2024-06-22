@@ -1,8 +1,9 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
+use opentelemetry::trace::TraceId;
 use prometheus_client::{
     encoding::EncodeLabelSet,
-    metrics::{counter::Counter, family::Family, histogram::Histogram},
+    metrics::{counter::Counter, exemplar::HistogramWithExemplars, family::Family},
     registry::{Registry, Unit},
 };
 use std::sync::Arc;
@@ -25,11 +26,28 @@ impl Default for Metrics {
     }
 }
 
+#[derive(Clone, Hash, PartialEq, Eq, EncodeLabelSet, Debug, Default)]
+pub struct TraceLabel {
+    pub trace_id: String,
+}
+impl TryFrom<&TraceId> for TraceLabel {
+    type Error = anyhow::Error;
+
+    fn try_from(id: &TraceId) -> Result<TraceLabel, Self::Error> {
+        if std::matches!(id, &TraceId::INVALID) {
+            anyhow::bail!("invalid trace id")
+        } else {
+            let trace_id = id.to_string();
+            Ok(Self { trace_id })
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Reconciler {
     pub reconciliations: Family<(), Counter>,
     pub failures: Family<ErrorLabels, Counter>,
-    pub reconcile_duration: Histogram,
+    pub reconcile_duration: HistogramWithExemplars<TraceLabel>,
 }
 
 impl Default for Reconciler {
@@ -37,7 +55,9 @@ impl Default for Reconciler {
         Reconciler {
             reconciliations: Family::<(), Counter>::default(),
             failures: Family::<ErrorLabels, Counter>::default(),
-            reconcile_duration: Histogram::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter()),
+            reconcile_duration: HistogramWithExemplars::new(
+                [0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter(),
+            ),
         }
     }
 }
@@ -79,10 +99,11 @@ impl Reconciler {
             .inc();
     }
 
-    pub fn count_and_measure(&self) -> ReconcileMeasurer {
+    pub fn count_and_measure(&self, trace_id: &TraceId) -> ReconcileMeasurer {
         self.reconciliations.get_or_create(&()).inc();
         ReconcileMeasurer {
             start: Instant::now(),
+            labels: trace_id.try_into().ok(),
             metric: self.reconcile_duration.clone(),
         }
     }
@@ -93,13 +114,15 @@ impl Reconciler {
 /// Relies on Drop to calculate duration and register the observation in the histogram
 pub struct ReconcileMeasurer {
     start: Instant,
-    metric: Histogram,
+    labels: Option<TraceLabel>,
+    metric: HistogramWithExemplars<TraceLabel>,
 }
 
 impl Drop for ReconcileMeasurer {
     fn drop(&mut self) {
         #[allow(clippy::cast_precision_loss)]
         let duration = self.start.elapsed().as_millis() as f64 / 1000.0;
-        self.metric.observe(duration);
+        let labels = self.labels.take();
+        self.metric.observe(duration, labels);
     }
 }
