@@ -1,9 +1,9 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
 use measured::{
-    metric::histogram::{HistogramVecTimer, Thresholds},
+    metric::histogram::{HistogramTimer, Thresholds},
     text::BufferedTextEncoder,
-    CounterVec, HistogramVec, LabelGroup, MetricGroup,
+    Counter, CounterVec, Histogram, LabelGroup, MetricGroup,
 };
 use tokio::sync::Mutex;
 
@@ -18,8 +18,7 @@ pub struct Metrics {
 pub struct ReconcilerMetrics {
     /// reconciliations
     #[metric(rename = "doc_controller_reconciliations_total")]
-    #[metric(label_set = EmptyLabelSet::default())]
-    pub reconciliations: CounterVec<EmptyLabelSet>,
+    pub reconciliations: Counter,
     /// reconciliation errors
     #[metric(rename = "doc_controller_reconciliation_errors_total")]
     #[metric(label_set = ErrorLabelSet::new())]
@@ -27,7 +26,7 @@ pub struct ReconcilerMetrics {
     /// duration of reconcile to complete in seconds
     #[metric(rename = "doc_controller_reconcile_duration_seconds")]
     #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]))]
-    pub reconcile_duration: HistogramVec<EmptyLabelSet, 8>,
+    pub reconcile_duration: Histogram<8>,
 }
 
 #[derive(LabelGroup)]
@@ -38,10 +37,6 @@ pub struct ErrorLabels<'a> {
     #[label(dynamic_with = lasso::ThreadedRodeo, default)]
     error: &'a str,
 }
-
-#[derive(LabelGroup, Default)]
-#[label(set = EmptyLabelSet)]
-pub struct EmptyLabels {}
 
 impl Default for ReconcilerMetrics {
     fn default() -> Self {
@@ -57,9 +52,9 @@ impl ReconcilerMetrics {
         })
     }
 
-    pub fn count_and_measure(&self) -> HistogramVecTimer<'_, EmptyLabelSet, 8> {
-        self.reconciliations.inc(EmptyLabels::default());
-        self.reconcile_duration.start_timer(EmptyLabels::default())
+    pub fn count_and_measure(&self) -> HistogramTimer<'_, 8> {
+        self.reconciliations.inc();
+        self.reconcile_duration.start_timer()
     }
 
     #[cfg(test)]
