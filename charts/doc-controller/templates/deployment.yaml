@@ -45,7 +45,7 @@ spec:
           value: {{ .Values.logging.env_filter }}
         {{- if .Values.tracing.enabled }}
         - name: OPENTELEMETRY_ENDPOINT_URL
-          value: https://{{ .Values.tracing.service }}.{{ .Values.tracing.namespace }}.cluster.local:{{ .Values.tracing.port }}
+          value: http://{{ .Values.tracing.service }}.{{ .Values.tracing.namespace }}.svc:{{ .Values.tracing.port }}
         {{- end }}
         {{- with .Values.env }}
         {{- toYaml . | nindent 8 }}
