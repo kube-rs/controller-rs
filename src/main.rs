@@ -5,7 +5,9 @@ pub use controller::{self, telemetry, State};
 #[get("/metrics")]
 async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
     let metrics = c.metrics();
-    HttpResponse::Ok().body(metrics)
+    HttpResponse::Ok()
+        .content_type("application/openmetrics-text; version=1.0.0; charset=utf-8")
+        .body(metrics)
 }
 
 #[get("/health")]
