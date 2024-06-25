@@ -34,7 +34,6 @@ schemars = { version = "0.8.12", features = ["chrono"] }
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = "1.0.105"
 serde_yaml = "0.9.25"
-prometheus = "0.13.3"
 chrono = { version = "0.4.26", features = ["serde"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["json", "env-filter"] }
@@ -44,6 +43,8 @@ opentelemetry-otlp = { version = "0.13.0", features = ["tokio"], optional = true
 tonic = { version = "0.9", optional = true }
 thiserror = "1.0.47"
 anyhow = "1.0.75"
+measured = { version = "0.0.21", features = ["lasso"] }
+lasso = "0.7.2"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"

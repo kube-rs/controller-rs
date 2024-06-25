@@ -1,80 +1,69 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
-use prometheus::{histogram_opts, opts, HistogramVec, IntCounter, IntCounterVec, Registry};
-use tokio::time::Instant;
+use measured::{
+    metric::histogram::{HistogramTimer, Thresholds},
+    text::BufferedTextEncoder,
+    Counter, CounterVec, Histogram, LabelGroup, MetricGroup,
+};
+use tokio::sync::Mutex;
 
-#[derive(Clone)]
+/// Metrics with handler
+#[derive(Default)]
 pub struct Metrics {
-    pub reconciliations: IntCounter,
-    pub failures: IntCounterVec,
-    pub reconcile_duration: HistogramVec,
+    pub encoder: Mutex<BufferedTextEncoder>,
+    pub app: AppMetrics,
 }
 
-impl Default for Metrics {
+/// All metrics
+#[derive(MetricGroup, Default)]
+pub struct AppMetrics {
+    #[metric(namespace = "doc_ctrl_reconcile")]
+    pub reconcile: ReconcileMetrics,
+}
+
+/// Metrics related to the reconciler
+#[derive(MetricGroup)]
+#[metric(new())]
+pub struct ReconcileMetrics {
+    pub runs: Counter,
+    pub failures: CounterVec<ErrorLabelSet>,
+    #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]), rename = "duration_seconds")]
+    pub duration: Histogram<8>,
+}
+
+#[derive(LabelGroup)]
+#[label(set = ErrorLabelSet)]
+pub struct ErrorLabels<'a> {
+    #[label(dynamic_with = lasso::ThreadedRodeo, default)]
+    instance: &'a str,
+    #[label(dynamic_with = lasso::ThreadedRodeo, default)]
+    error: &'a str,
+}
+
+impl Default for ReconcileMetrics {
     fn default() -> Self {
-        let reconcile_duration = HistogramVec::new(
-            histogram_opts!(
-                "doc_controller_reconcile_duration_seconds",
-                "The duration of reconcile to complete in seconds"
-            )
-            .buckets(vec![0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]),
-            &[],
-        )
-        .unwrap();
-        let failures = IntCounterVec::new(
-            opts!(
-                "doc_controller_reconciliation_errors_total",
-                "reconciliation errors",
-            ),
-            &["instance", "error"],
-        )
-        .unwrap();
-        let reconciliations =
-            IntCounter::new("doc_controller_reconciliations_total", "reconciliations").unwrap();
-        Metrics {
-            reconciliations,
-            failures,
-            reconcile_duration,
-        }
+        ReconcileMetrics::new()
     }
 }
 
-impl Metrics {
-    /// Register API metrics to start tracking them.
-    pub fn register(self, registry: &Registry) -> Result<Self, prometheus::Error> {
-        registry.register(Box::new(self.reconcile_duration.clone()))?;
-        registry.register(Box::new(self.failures.clone()))?;
-        registry.register(Box::new(self.reconciliations.clone()))?;
-        Ok(self)
+impl ReconcileMetrics {
+    pub fn set_failure(&self, doc: &Document, e: &Error) {
+        self.failures.inc(ErrorLabels {
+            instance: doc.name_any().as_ref(),
+            error: e.metric_label().as_ref(),
+        })
     }
 
-    pub fn reconcile_failure(&self, doc: &Document, e: &Error) {
-        self.failures
-            .with_label_values(&[doc.name_any().as_ref(), e.metric_label().as_ref()])
-            .inc()
+    pub fn count_and_measure(&self) -> HistogramTimer<'_, 8> {
+        self.runs.inc();
+        self.duration.start_timer()
     }
 
-    pub fn count_and_measure(&self) -> ReconcileMeasurer {
-        self.reconciliations.inc();
-        ReconcileMeasurer {
-            start: Instant::now(),
-            metric: self.reconcile_duration.clone(),
-        }
-    }
-}
-
-/// Smart function duration measurer
-///
-/// Relies on Drop to calculate duration and register the observation in the histogram
-pub struct ReconcileMeasurer {
-    start: Instant,
-    metric: HistogramVec,
-}
-
-impl Drop for ReconcileMeasurer {
-    fn drop(&mut self) {
-        #[allow(clippy::cast_precision_loss)]
-        let duration = self.start.elapsed().as_millis() as f64 / 1000.0;
-        self.metric.with_label_values(&[]).observe(duration);
+    #[cfg(test)]
+    pub fn get_failures(&self, instance: &str, error: &str) -> u64 {
+        let labels = ErrorLabels { instance, error };
+        // awkward, but it gets the job done for tests
+        let metric = self.failures.get_metric(self.failures.with_labels(labels));
+        metric.count.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
