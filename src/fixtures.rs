@@ -1,9 +1,8 @@
 //! Helper methods only available for tests
-use crate::{Context, Document, DocumentSpec, DocumentStatus, Metrics, Result, DOCUMENT_FINALIZER};
+use crate::{Context, Document, DocumentSpec, DocumentStatus, Result, DOCUMENT_FINALIZER};
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
 use kube::{client::Body, Client, Resource, ResourceExt};
-use prometheus::Registry;
 use std::sync::Arc;
 
 impl Document {
@@ -208,15 +207,14 @@ impl ApiServerVerifier {
 
 impl Context {
     // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
-    pub fn test() -> (Arc<Self>, ApiServerVerifier, Registry) {
+    pub fn test() -> (Arc<Self>, ApiServerVerifier) {
         let (mock_service, handle) = tower_test::mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
-        let registry = Registry::default();
         let ctx = Self {
             client: mock_client,
-            metrics: Metrics::default().register(&registry).unwrap(),
+            metrics: Arc::default(),
             diagnostics: Arc::default(),
         };
-        (Arc::new(ctx), ApiServerVerifier(handle), registry)
+        (Arc::new(ctx), ApiServerVerifier(handle))
     }
 }
