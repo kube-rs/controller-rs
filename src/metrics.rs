@@ -17,21 +17,18 @@ pub struct Metrics {
 /// All metrics
 #[derive(MetricGroup, Default)]
 pub struct AppMetrics {
-    #[metric(namespace = "doc_ctrl")]
-    pub reconciler: ReconcilerMetrics,
+    #[metric(namespace = "doc_ctrl_reconcile")]
+    pub reconcile: ReconcileMetrics,
 }
 
 /// Metrics related to the reconciler
 #[derive(MetricGroup)]
 #[metric(new())]
-pub struct ReconcilerMetrics {
-    /// reconciliations
-    pub reconciliations: Counter,
-    /// reconciliation errors
+pub struct ReconcileMetrics {
+    pub runs: Counter,
     pub failures: CounterVec<ErrorLabelSet>,
-    /// duration of reconcile to complete in seconds
-    #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]))]
-    pub reconcile_duration: Histogram<8>,
+    #[metric(metadata = Thresholds::with_buckets([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.]), rename = "duration_seconds")]
+    pub duration: Histogram<8>,
 }
 
 #[derive(LabelGroup)]
@@ -43,13 +40,13 @@ pub struct ErrorLabels<'a> {
     error: &'a str,
 }
 
-impl Default for ReconcilerMetrics {
+impl Default for ReconcileMetrics {
     fn default() -> Self {
-        ReconcilerMetrics::new()
+        ReconcileMetrics::new()
     }
 }
 
-impl ReconcilerMetrics {
+impl ReconcileMetrics {
     pub fn set_failure(&self, doc: &Document, e: &Error) {
         self.failures.inc(ErrorLabels {
             instance: doc.name_any().as_ref(),
@@ -58,8 +55,8 @@ impl ReconcilerMetrics {
     }
 
     pub fn count_and_measure(&self) -> HistogramTimer<'_, 8> {
-        self.reconciliations.inc();
-        self.reconcile_duration.start_timer()
+        self.runs.inc();
+        self.duration.start_timer()
     }
 
     #[cfg(test)]

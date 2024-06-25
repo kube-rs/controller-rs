@@ -60,7 +60,7 @@ pub struct Context {
 async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
-    let _timer = ctx.metrics.app.reconciler.count_and_measure();
+    let _timer = ctx.metrics.app.reconcile.count_and_measure();
     ctx.diagnostics.write().await.last_event = Utc::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
@@ -78,7 +78,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.app.reconciler.set_failure(&doc, error);
+    ctx.metrics.app.reconcile.set_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -270,7 +270,7 @@ mod test {
         assert!(err.to_string().contains("IllegalDocument"));
         // calling error policy with the reconciler error should cause the correct metric to be set
         error_policy(doc.clone(), &err, testctx.clone());
-        let metrics = &testctx.metrics.app.reconciler;
+        let metrics = &testctx.metrics.app.reconcile;
         let failures = metrics.get_failures("illegal", "finalizererror(applyfailed(illegaldocument))");
         assert_eq!(failures, 1);
     }
