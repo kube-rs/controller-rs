@@ -11,17 +11,17 @@ use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct Metrics {
-    pub reconciler: Reconciler,
+    pub reconcile: ReconcileMetrics,
     pub registry: Arc<Registry>,
 }
 
 impl Default for Metrics {
     fn default() -> Self {
-        let mut registry = Registry::with_prefix("doc_ctrl");
-        let reconciler = Reconciler::default().register(&mut registry);
+        let mut registry = Registry::with_prefix("doc_ctrl_reconcile");
+        let reconcile = ReconcileMetrics::default().register(&mut registry);
         Self {
             registry: Arc::new(registry),
-            reconciler,
+            reconcile,
         }
     }
 }
@@ -44,20 +44,18 @@ impl TryFrom<&TraceId> for TraceLabel {
 }
 
 #[derive(Clone)]
-pub struct Reconciler {
-    pub reconciliations: Family<(), Counter>,
+pub struct ReconcileMetrics {
+    pub runs: Family<(), Counter>,
     pub failures: Family<ErrorLabels, Counter>,
-    pub reconcile_duration: HistogramWithExemplars<TraceLabel>,
+    pub duration: HistogramWithExemplars<TraceLabel>,
 }
 
-impl Default for Reconciler {
+impl Default for ReconcileMetrics {
     fn default() -> Self {
-        Reconciler {
-            reconciliations: Family::<(), Counter>::default(),
+        Self {
+            runs: Family::<(), Counter>::default(),
             failures: Family::<ErrorLabels, Counter>::default(),
-            reconcile_duration: HistogramWithExemplars::new(
-                [0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter(),
-            ),
+            duration: HistogramWithExemplars::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter()),
         }
     }
 }
@@ -68,25 +66,17 @@ pub struct ErrorLabels {
     pub error: String,
 }
 
-impl Reconciler {
+impl ReconcileMetrics {
     /// Register API metrics to start tracking them.
-    pub fn register(self, registry: &mut Registry) -> Self {
-        registry.register_with_unit(
-            "reconcile_duration_seconds",
-            "The duration of reconcile to complete in seconds",
+    pub fn register(self, r: &mut Registry) -> Self {
+        r.register_with_unit(
+            "duration",
+            "reconcile duration",
             Unit::Seconds,
-            self.reconcile_duration.clone(),
+            self.duration.clone(),
         );
-        registry.register(
-            "reconciliation_errors_total",
-            "reconciliation errors",
-            self.failures.clone(),
-        );
-        registry.register(
-            "reconciliations_total",
-            "reconciliations",
-            self.reconciliations.clone(),
-        );
+        r.register("failures", "reconciliation errors", self.failures.clone());
+        r.register("runs", "reconciliations", self.runs.clone());
         self
     }
 
@@ -100,11 +90,11 @@ impl Reconciler {
     }
 
     pub fn count_and_measure(&self, trace_id: &TraceId) -> ReconcileMeasurer {
-        self.reconciliations.get_or_create(&()).inc();
+        self.runs.get_or_create(&()).inc();
         ReconcileMeasurer {
             start: Instant::now(),
             labels: trace_id.try_into().ok(),
-            metric: self.reconcile_duration.clone(),
+            metric: self.duration.clone(),
         }
     }
 }

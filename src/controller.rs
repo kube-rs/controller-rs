@@ -60,7 +60,7 @@ pub struct Context {
 async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
     let trace_id = telemetry::get_trace_id();
     Span::current().record("trace_id", &field::display(&trace_id));
-    let _timer = ctx.metrics.reconciler.count_and_measure(&trace_id);
+    let _timer = ctx.metrics.reconcile.count_and_measure(&trace_id);
     ctx.diagnostics.write().await.last_event = Utc::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
@@ -78,7 +78,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
 
 fn error_policy(doc: Arc<Document>, error: &Error, ctx: Arc<Context>) -> Action {
     warn!("reconcile failed: {:?}", error);
-    ctx.metrics.reconciler.set_failure(&doc, error);
+    ctx.metrics.reconcile.set_failure(&doc, error);
     Action::requeue(Duration::from_secs(5 * 60))
 }
 
@@ -280,7 +280,7 @@ mod test {
             instance: "illegal".into(),
             error: "finalizererror(applyfailed(illegaldocument))".into(),
         };
-        let metrics = &testctx.metrics.reconciler;
+        let metrics = &testctx.metrics.reconcile;
         let failures = metrics.failures.get_or_create(&err_labels).get();
         assert_eq!(failures, 1);
     }
