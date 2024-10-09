@@ -19,7 +19,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Configure tags based on git tags + latest
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: clux/controller
@@ -91,7 +91,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Configure tags based on git tags for otel
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: clux/controller
