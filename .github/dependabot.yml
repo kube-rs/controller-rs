@@ -6,6 +6,11 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+    groups:
+      artifact-io:
+        patterns:
+          - actions/upload-artifact
+          - actions/download-artifact
 
   - package-ecosystem: "cargo"
     directory: "/"
