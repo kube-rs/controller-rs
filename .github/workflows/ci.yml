@@ -76,7 +76,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image.tar
 
       - name: Upload base docker image as artifact for e2e tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: controller-image
           path: /tmp/image.tar
