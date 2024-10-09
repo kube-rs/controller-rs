@@ -1,10 +1,8 @@
 //! Helper methods only available for tests
-use crate::{Context, Document, DocumentSpec, DocumentStatus, Metrics, Result, DOCUMENT_FINALIZER};
+use crate::{Context, Document, DocumentSpec, DocumentStatus, Result, DOCUMENT_FINALIZER};
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
-use hyper::{body::to_bytes, Body};
-use kube::{Client, Resource, ResourceExt};
-use prometheus::Registry;
+use kube::{client::Body, Client, Resource, ResourceExt};
 use std::sync::Arc;
 
 impl Document {
@@ -129,7 +127,7 @@ impl ApiServerVerifier {
             { "op": "test", "path": "/metadata/finalizers", "value": null },
             { "op": "add", "path": "/metadata/finalizers", "value": vec![DOCUMENT_FINALIZER] }
         ]);
-        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let runtime_patch: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid document from runtime");
         assert_json_include!(actual: runtime_patch, expected: expected_patch);
@@ -154,7 +152,7 @@ impl ApiServerVerifier {
             { "op": "test", "path": "/metadata/finalizers/0", "value": DOCUMENT_FINALIZER },
             { "op": "remove", "path": "/metadata/finalizers/0", "path": "/metadata/finalizers/0" }
         ]);
-        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let runtime_patch: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid document from runtime");
         assert_json_include!(actual: runtime_patch, expected: expected_patch);
@@ -172,7 +170,7 @@ impl ApiServerVerifier {
             format!("/apis/events.k8s.io/v1/namespaces/default/events?")
         );
         // verify the event reason matches the expected
-        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let postdata: serde_json::Value =
             serde_json::from_slice(&req_body).expect("valid event from runtime");
         dbg!("postdata for event: {}", postdata.clone());
@@ -195,7 +193,7 @@ impl ApiServerVerifier {
                 doc.name_any()
             )
         );
-        let req_body = to_bytes(request.into_body()).await.unwrap();
+        let req_body = request.into_body().collect_bytes().await.unwrap();
         let json: serde_json::Value = serde_json::from_slice(&req_body).expect("patch_status object is json");
         let status_json = json.get("status").expect("status object").clone();
         let status: DocumentStatus = serde_json::from_value(status_json).expect("valid status");
@@ -207,18 +205,16 @@ impl ApiServerVerifier {
     }
 }
 
-
 impl Context {
     // Create a test context with a mocked kube client, locally registered metrics and default diagnostics
-    pub fn test() -> (Arc<Self>, ApiServerVerifier, Registry) {
+    pub fn test() -> (Arc<Self>, ApiServerVerifier) {
         let (mock_service, handle) = tower_test::mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
-        let registry = Registry::default();
         let ctx = Self {
             client: mock_client,
-            metrics: Metrics::default().register(&registry).unwrap(),
+            metrics: Arc::default(),
             diagnostics: Arc::default(),
         };
-        (Arc::new(ctx), ApiServerVerifier(handle), registry)
+        (Arc::new(ctx), ApiServerVerifier(handle))
     }
 }

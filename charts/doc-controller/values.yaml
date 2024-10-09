@@ -1,19 +1,18 @@
 replicaCount: 1
 nameOverride: ""
 namespace: "default"
+version: "" # pin a specific version
 
 image:
   repository: clux/controller
   pullPolicy: IfNotPresent
-  tag: ""
 
 imagePullSecrets: []
 
 serviceAccount:
+  create: true
   annotations: {}
 podAnnotations: {}
-  # prometheus.io/scrape: "true"
-  # prometheus.io/port: "8080"
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -24,6 +23,34 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+# Configure the gRPC opentelemetry push url
+tracing:
+  # Use the telemetry built image and inject OPENTELEMETRY_ENDPOINT_URL
+  enabled: false
+  # namespace of the collector
+  namespace: monitoring
+  # collector service name
+  service: promstack-tempo
+  # collector port for OTLP gRPC
+  port: 4317
+
+networkPolicy:
+  enabled: true
+  dns: true
+  # apiserver access: please scope; take addresses from "kubectl get endpoints kubernetes -n default"
+  apiserver:
+  - "0.0.0.0/0" # extremely wide-open egress on ports 443 + 6443
+  prometheus:
+    enabled: true
+    namespace: monitoring
+    app: prometheus
+    port: http
+
+logging:
+  env_filter: info,kube=debug,controller=debug
+
+env: []
 
 service:
   type: ClusterIP
@@ -37,6 +64,7 @@ resources:
     cpu: 50m
     memory: 100Mi
 
-# TODO: evar option for otel
-# TODO: how to select between otel and non otel?
-# TODO: metrics scraping?
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  scheme: http
