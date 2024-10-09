@@ -1,23 +1,22 @@
-//use opentelemetry::trace::TraceId;
-use opentelemetry::trace::{TraceContextExt, Tracer};
+use opentelemetry::trace::{TraceContextExt, TraceId};
 use opentelemetry::KeyValue;
 use opentelemetry::{global, trace::TracerProvider};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::trace::Config;
 use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{prelude::*, EnvFilter, Registry};
+use tracing_subscriber::{prelude::*, EnvFilter};
 
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
-pub fn get_trace_id() -> u64 {
+pub fn get_trace_id() -> TraceId {
     //use opentelemetry::trace::context::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
-    //use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
-    tracing::Span::current().id().unwrap().into_u64()
-    /*tracing::Span::current()
-    .context()
-    .span()
-    .span_context()
-    .trace_id()*/
+    use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
+                                                          //tracing::Span::current().id().unwrap().into_u64()
+    tracing::Span::current()
+        .context()
+        .span()
+        .span_context()
+        .trace_id()
 }
 
 fn resource() -> Resource {
@@ -91,9 +90,9 @@ mod test {
         use super::*;
         super::init().await;
         #[tracing::instrument(name = "test_span")] // need to be in an instrumented fn
-        fn test_trace_id() -> u64 {
+        fn test_trace_id() -> TraceId {
             get_trace_id()
         }
-        assert_ne!(test_trace_id(), 0, "valid trace");
+        assert_ne!(test_trace_id(), TraceId::INVALID, "valid trace");
     }
 }
