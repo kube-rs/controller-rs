@@ -12,7 +12,7 @@ jobs:
   docker-base:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Build and push with docker buildx
       - name: Setup docker buildx
@@ -84,7 +84,7 @@ jobs:
   docker-otel:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Build and push with docker buildx
       - name: Setup docker buildx
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker-base]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: nolar/setup-k3d-k3s@v1
         with:
           version: v1.27
@@ -178,7 +178,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
       - uses: dtolnay/rust-toolchain@stable
@@ -196,7 +196,7 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -215,7 +215,7 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - uses: dtolnay/rust-toolchain@stable
