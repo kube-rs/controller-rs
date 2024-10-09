@@ -1,15 +1,12 @@
-use opentelemetry::trace::{TraceContextExt, TraceId};
-use opentelemetry::KeyValue;
-use opentelemetry::{global, trace::TracerProvider};
+use opentelemetry::trace::{TraceId, TracerProvider};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::trace::Config;
-use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
+use opentelemetry_sdk::{runtime, trace as sdktrace, trace::Config, Resource};
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{prelude::*, EnvFilter};
+use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
 pub fn get_trace_id() -> TraceId {
-    //use opentelemetry::trace::context::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
+    use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
     use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
                                                           //tracing::Span::current().id().unwrap().into_u64()
     tracing::Span::current()
@@ -20,6 +17,7 @@ pub fn get_trace_id() -> TraceId {
 }
 
 fn resource() -> Resource {
+    use opentelemetry::KeyValue;
     Resource::new([
         KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
         KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
@@ -28,55 +26,37 @@ fn resource() -> Resource {
 
 #[cfg(feature = "telemetry")]
 fn init_tracer() -> sdktrace::Tracer {
-    let otlp_endpoint =
-        std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
-
-    /*let export_config = ExportConfig {
-        endpoint: otlp_endpoint.clone(),
-        ..ExportConfig::default()
-    };*/
+    let endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Needs an otel collector");
+    let exporter = opentelemetry_otlp::new_exporter().tonic().with_endpoint(endpoint);
 
     let provider = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(otlp_endpoint),
-        )
+        .with_exporter(exporter)
         .with_trace_config(Config::default().with_resource(resource()))
         .install_batch(runtime::Tokio)
         .expect("valid tracer");
 
-    global::set_tracer_provider(provider.clone());
+    opentelemetry::global::set_tracer_provider(provider.clone());
     provider.tracer("tracing-otel-subscriber")
 }
 
 /// Initialize tracing
 pub async fn init() {
     // Setup tracing layers
-    //#[cfg(feature = "telemetry")]
+    #[cfg(feature = "telemetry")]
     let otel = OpenTelemetryLayer::new(init_tracer());
 
-    //let telemetry = tracing_opentelemetry::layer().with_tracer(init_tracer());
     let logger = tracing_subscriber::fmt::layer().compact();
     let env_filter = EnvFilter::try_from_default_env()
         .or(EnvFilter::try_new("info"))
         .unwrap();
 
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(logger)
-        .with(otel)
-        .init();
-
     // Decide on layers
-    //#[cfg(feature = "telemetry")]
-    //let collector = Registry::default().with(telemetry).with(logger).with(env_filter);
-    //#[cfg(not(feature = "telemetry"))]
-    //let collector = Registry::default().with(logger).with(env_filter);
-
-    // Initialize tracing
-    //tracing::subscriber::set_global_default(collector).unwrap();
+    let reg = Registry::default();
+    #[cfg(feature = "telemetry")]
+    reg.with(env_filter).with(logger).with(otel).init();
+    #[cfg(not(feature = "telemetry"))]
+    reg.with(env_filter).with(logger).init();
 }
 
 #[cfg(test)]
