@@ -27,5 +27,6 @@ updates:
         patterns:
           - tracing-opentelemetry
           - opentelemetry-otlp
+          - opentelemetry_sdk
           - opentelemetry
           - tonic
