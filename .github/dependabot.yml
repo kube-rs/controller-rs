@@ -9,6 +9,12 @@ updates:
 
   - package-ecosystem: "cargo"
     directory: "/"
+    labels:
+      - "dependencies"
     schedule:
       interval: "weekly"
-    labels:
+    groups:
+      kube:
+        patterns:
+          - kube
+          - k8s-openapi
