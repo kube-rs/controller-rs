@@ -1,7 +1,7 @@
 //use opentelemetry::trace::TraceId;
-use opentelemetry::global;
 use opentelemetry::trace::{TraceContextExt, Tracer};
 use opentelemetry::KeyValue;
+use opentelemetry::{global, trace::TracerProvider};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::trace::Config;
 use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
@@ -28,7 +28,7 @@ fn resource() -> Resource {
 }
 
 #[cfg(feature = "telemetry")]
-fn init_tracer() -> sdktrace::TracerProvider {
+fn init_tracer() -> sdktrace::Tracer {
     let otlp_endpoint =
         std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Need a otel tracing collector configured");
 
@@ -36,7 +36,8 @@ fn init_tracer() -> sdktrace::TracerProvider {
         endpoint: otlp_endpoint.clone(),
         ..ExportConfig::default()
     };*/
-    opentelemetry_otlp::new_pipeline()
+
+    let provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(
             opentelemetry_otlp::new_exporter()
@@ -45,15 +46,17 @@ fn init_tracer() -> sdktrace::TracerProvider {
         )
         .with_trace_config(Config::default().with_resource(resource()))
         .install_batch(runtime::Tokio)
-        .expect("valid tracer")
+        .expect("valid tracer");
+
+    global::set_tracer_provider(provider.clone());
+    provider.tracer("tracing-otel-subscriber")
 }
 
 /// Initialize tracing
 pub async fn init() {
     // Setup tracing layers
     //#[cfg(feature = "telemetry")]
-    let tracer = init_tracer();
-    global::set_tracer_provider(tracer);
+    let otel = OpenTelemetryLayer::new(init_tracer());
 
     //let telemetry = tracing_opentelemetry::layer().with_tracer(init_tracer());
     let logger = tracing_subscriber::fmt::layer().compact();
@@ -62,9 +65,9 @@ pub async fn init() {
         .unwrap();
 
     tracing_subscriber::registry()
-        //.with(env_filter)
+        .with(env_filter)
         .with(logger)
-        .with(OpenTelemetryLayer::new(tracer))
+        .with(otel)
         .init();
 
     // Decide on layers
