@@ -1,6 +1,6 @@
 use crate::{Document, Error};
 use kube::ResourceExt;
-use opentelemetry::trace::TraceId;
+//use opentelemetry::trace::TraceId;
 use prometheus_client::{
     encoding::EncodeLabelSet,
     metrics::{counter::Counter, exemplar::HistogramWithExemplars, family::Family},
@@ -30,11 +30,11 @@ impl Default for Metrics {
 pub struct TraceLabel {
     pub trace_id: String,
 }
-impl TryFrom<&TraceId> for TraceLabel {
+impl TryFrom<u64> for TraceLabel {
     type Error = anyhow::Error;
 
-    fn try_from(id: &TraceId) -> Result<TraceLabel, Self::Error> {
-        if std::matches!(id, &TraceId::INVALID) {
+    fn try_from(id: u64) -> Result<TraceLabel, Self::Error> {
+        if std::matches!(id, 0) {
             anyhow::bail!("invalid trace id")
         } else {
             let trace_id = id.to_string();
@@ -89,7 +89,7 @@ impl ReconcileMetrics {
             .inc();
     }
 
-    pub fn count_and_measure(&self, trace_id: &TraceId) -> ReconcileMeasurer {
+    pub fn count_and_measure(&self, trace_id: u64) -> ReconcileMeasurer {
         self.runs.get_or_create(&()).inc();
         ReconcileMeasurer {
             start: Instant::now(),
