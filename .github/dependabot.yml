@@ -18,3 +18,9 @@ updates:
         patterns:
           - kube
           - k8s-openapi
+      otel:
+        patterns:
+          - tracing-opentelemetry
+          - opentelemetry-otlp
+          - opentelemetry
+          - tonic
