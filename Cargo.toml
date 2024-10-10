@@ -40,7 +40,7 @@ tracing-subscriber = { version = "0.3.18", features = ["json", "env-filter"] }
 tracing-opentelemetry = "0.27.0"
 opentelemetry = { version = "0.26.0", features = ["trace"] }
 opentelemetry-otlp = { version = "0.26.0", features = ["tokio"], optional = true }
-opentelemetry_sdk = { version = "0.26.0", features = ["tokio", "rt-tokio"] }
+opentelemetry_sdk = { version = "0.26.0", features = ["rt-tokio"] }
 thiserror = "1.0.47"
 anyhow = "1.0.89"
 prometheus-client = "0.22.2"
