@@ -7,7 +7,6 @@ use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 pub fn get_trace_id() -> TraceId {
     use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
     use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
-                                                          //tracing::Span::current().id().unwrap().into_u64()
     tracing::Span::current()
         .context()
         .span()
