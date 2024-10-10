@@ -52,7 +52,7 @@ hyper = "1"
 tower-test = "0.4.0"
 
 [dependencies.kube]
-features = ["runtime", "client", "derive" ]
+features = ["runtime", "client", "derive", "unstable-runtime"]
 version = "0.96.0"
 
 # testing new releases - ignore
