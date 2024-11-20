@@ -42,8 +42,11 @@ spec:
             properties:
               hidden:
                 type: boolean
+              last_update:
+                type: string
             required:
             - hidden
+            - last_update
             type: object
         required:
         - spec
