@@ -24,6 +24,8 @@ pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 /// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 ///
 /// This provides a hook for generating the CRD yaml (in crdgen.rs)
+/// NB: CustomResource generates a pub struct Document here
+/// To query for documents.kube.rs with kube, use Api<Document>.
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
@@ -88,7 +90,8 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), self);
+        let recorder = ctx.diagnostics.read().await.recorder(client.clone());
+        let oref = self.object_ref(&());
         let ns = self.namespace().unwrap();
         let name = self.name_any();
         let docs: Api<Document> = Api::namespaced(client, &ns);
@@ -97,13 +100,16 @@ impl Document {
         if !self.was_hidden() && should_hide {
             // send an event once per hide
             recorder
-                .publish(Event {
-                    type_: EventType::Normal,
-                    reason: "HideRequested".into(),
-                    note: Some(format!("Hiding `{name}`")),
-                    action: "Hiding".into(),
-                    secondary: None,
-                })
+                .publish(
+                    Event {
+                        type_: EventType::Normal,
+                        reason: "HideRequested".into(),
+                        note: Some(format!("Hiding `{name}`")),
+                        action: "Hiding".into(),
+                        secondary: None,
+                    },
+                    &oref,
+                )
                 .await
                 .map_err(Error::KubeError)?;
         }
@@ -130,16 +136,20 @@ impl Document {
 
     // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), self);
+        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone());
+        let oref = self.object_ref(&());
         // Document doesn't have any real cleanup, so we just publish an event
         recorder
-            .publish(Event {
-                type_: EventType::Normal,
-                reason: "DeleteRequested".into(),
-                note: Some(format!("Delete `{}`", self.name_any())),
-                action: "Deleting".into(),
-                secondary: None,
-            })
+            .publish(
+                Event {
+                    type_: EventType::Normal,
+                    reason: "DeleteRequested".into(),
+                    note: Some(format!("Delete `{}`", self.name_any())),
+                    action: "Deleting".into(),
+                    secondary: None,
+                },
+                &oref,
+            )
             .await
             .map_err(Error::KubeError)?;
         Ok(Action::await_change())
@@ -163,8 +173,8 @@ impl Default for Diagnostics {
     }
 }
 impl Diagnostics {
-    fn recorder(&self, client: Client, doc: &Document) -> Recorder {
-        Recorder::new(client, self.reporter.clone(), doc.object_ref(&()))
+    fn recorder(&self, client: Client) -> Recorder {
+        Recorder::new(client, self.reporter.clone())
     }
 }
 
