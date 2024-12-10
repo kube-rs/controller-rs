@@ -1479,6 +1479,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "0.97.0"
+source = "git+https://github.com/pando85/kube.git?branch=feat%2Fadd-series-implementation-for-events-recorder#dd650b21d9b59042683f441584a50ffd5da97b64"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1490,6 +1491,7 @@ dependencies = [
 [[package]]
 name = "kube-client"
 version = "0.97.0"
+source = "git+https://github.com/pando85/kube.git?branch=feat%2Fadd-series-implementation-for-events-recorder#dd650b21d9b59042683f441584a50ffd5da97b64"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -1526,6 +1528,7 @@ dependencies = [
 [[package]]
 name = "kube-core"
 version = "0.97.0"
+source = "git+https://github.com/pando85/kube.git?branch=feat%2Fadd-series-implementation-for-events-recorder#dd650b21d9b59042683f441584a50ffd5da97b64"
 dependencies = [
  "chrono",
  "form_urlencoded",
@@ -1542,6 +1545,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "0.97.0"
+source = "git+https://github.com/pando85/kube.git?branch=feat%2Fadd-series-implementation-for-events-recorder#dd650b21d9b59042683f441584a50ffd5da97b64"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1553,6 +1557,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "0.97.0"
+source = "git+https://github.com/pando85/kube.git?branch=feat%2Fadd-series-implementation-for-events-recorder#dd650b21d9b59042683f441584a50ffd5da97b64"
 dependencies = [
  "ahash",
  "async-broadcast",

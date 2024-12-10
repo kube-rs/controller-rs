@@ -59,4 +59,6 @@ features = ["runtime", "client", "derive" ]
 #git = "https://github.com/kube-rs/kube.git"
 #branch = "main"
 #rev = "19b90ad3a4dbc83e1dd742847c7707333259b1bb"
-path = "../kube/kube"
+#path = "../kube/kube"
+git = "https://github.com/pando85/kube.git"
+branch = "feat/add-series-implementation-for-events-recorder"

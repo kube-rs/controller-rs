@@ -52,6 +52,8 @@ impl Document {
 pub struct Context {
     /// Kubernetes client
     pub client: Client,
+    /// Event recorder
+    pub recorder: Recorder,
     /// Diagnostics read by the web server
     pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
@@ -90,7 +92,6 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        let recorder = ctx.diagnostics.read().await.recorder(client.clone());
         let oref = self.object_ref(&());
         let ns = self.namespace().unwrap();
         let name = self.name_any();
@@ -99,7 +100,7 @@ impl Document {
         let should_hide = self.spec.hide;
         if !self.was_hidden() && should_hide {
             // send an event once per hide
-            recorder
+            ctx.recorder
                 .publish(
                     Event {
                         type_: EventType::Normal,
@@ -136,10 +137,9 @@ impl Document {
 
     // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone());
         let oref = self.object_ref(&());
         // Document doesn't have any real cleanup, so we just publish an event
-        recorder
+        ctx.recorder
             .publish(
                 Event {
                     type_: EventType::Normal,
@@ -203,9 +203,10 @@ impl State {
     }
 
     // Create a Controller Context that can update State
-    pub fn to_context(&self, client: Client) -> Arc<Context> {
+    pub async fn to_context(&self, client: Client) -> Arc<Context> {
         Arc::new(Context {
-            client,
+            client: client.clone(),
+            recorder: self.diagnostics.read().await.recorder(client),
             metrics: self.metrics.clone(),
             diagnostics: self.diagnostics.clone(),
         })
@@ -223,7 +224,7 @@ pub async fn run(state: State) {
     }
     Controller::new(docs, Config::default().any_semantic())
         .shutdown_on_signal()
-        .run(reconcile, error_policy, state.to_context(client))
+        .run(reconcile, error_policy, state.to_context(client).await)
         .filter_map(|x| async move { std::result::Result::ok(x) })
         .for_each(|_| futures::future::ready(()))
         .await;
