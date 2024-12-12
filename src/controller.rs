@@ -102,7 +102,7 @@ impl Document {
             // send an event once per hide
             ctx.recorder
                 .publish(
-                    Event {
+                    &Event {
                         type_: EventType::Normal,
                         reason: "HideRequested".into(),
                         note: Some(format!("Hiding `{name}`")),
@@ -141,7 +141,7 @@ impl Document {
         // Document doesn't have any real cleanup, so we just publish an event
         ctx.recorder
             .publish(
-                Event {
+                &Event {
                     type_: EventType::Normal,
                     reason: "DeleteRequested".into(),
                     note: Some(format!("Delete `{}`", self.name_any())),
