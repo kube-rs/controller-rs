@@ -304,7 +304,7 @@ mod test {
     #[ignore = "uses k8s current-context"]
     async fn integration_reconcile_should_set_status_and_send_event() {
         let client = kube::Client::try_default().await.unwrap();
-        let ctx = super::State::default().to_context(client.clone());
+        let ctx = super::State::default().to_context(client.clone()).await;
 
         // create a test doc
         let doc = Document::test().finalized().needs_hide();
