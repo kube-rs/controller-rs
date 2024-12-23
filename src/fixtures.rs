@@ -2,7 +2,7 @@
 use crate::{Context, Document, DocumentSpec, DocumentStatus, Result, DOCUMENT_FINALIZER};
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
-use kube::{client::Body, Client, Resource, ResourceExt};
+use kube::{client::Body, runtime::events::Recorder, Client, Resource, ResourceExt};
 use std::sync::Arc;
 
 impl Document {
@@ -210,10 +210,12 @@ impl Context {
     pub fn test() -> (Arc<Self>, ApiServerVerifier) {
         let (mock_service, handle) = tower_test::mock::pair::<Request<Body>, Response<Body>>();
         let mock_client = Client::new(mock_service, "default");
+        let mock_recorder = Recorder::new(mock_client.clone(), "doc-ctrl-test".into());
         let ctx = Self {
             client: mock_client,
             metrics: Arc::default(),
             diagnostics: Arc::default(),
+            recorder: mock_recorder,
         };
         (Arc::new(ctx), ApiServerVerifier(handle))
     }

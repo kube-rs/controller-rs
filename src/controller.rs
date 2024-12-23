@@ -24,6 +24,8 @@ pub static DOCUMENT_FINALIZER: &str = "documents.kube.rs";
 /// Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 ///
 /// This provides a hook for generating the CRD yaml (in crdgen.rs)
+/// NB: CustomResource generates a pub struct Document here
+/// To query for documents.kube.rs with kube, use Api<Document>.
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[cfg_attr(test, derive(Default))]
 #[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
@@ -50,6 +52,8 @@ impl Document {
 pub struct Context {
     /// Kubernetes client
     pub client: Client,
+    /// Event recorder
+    pub recorder: Recorder,
     /// Diagnostics read by the web server
     pub diagnostics: Arc<RwLock<Diagnostics>>,
     /// Prometheus metrics
@@ -88,7 +92,7 @@ impl Document {
     // Reconcile (for non-finalizer related changes)
     async fn reconcile(&self, ctx: Arc<Context>) -> Result<Action> {
         let client = ctx.client.clone();
-        let recorder = ctx.diagnostics.read().await.recorder(client.clone(), self);
+        let oref = self.object_ref(&());
         let ns = self.namespace().unwrap();
         let name = self.name_any();
         let docs: Api<Document> = Api::namespaced(client, &ns);
@@ -96,14 +100,17 @@ impl Document {
         let should_hide = self.spec.hide;
         if !self.was_hidden() && should_hide {
             // send an event once per hide
-            recorder
-                .publish(Event {
-                    type_: EventType::Normal,
-                    reason: "HideRequested".into(),
-                    note: Some(format!("Hiding `{name}`")),
-                    action: "Hiding".into(),
-                    secondary: None,
-                })
+            ctx.recorder
+                .publish(
+                    &Event {
+                        type_: EventType::Normal,
+                        reason: "HideRequested".into(),
+                        note: Some(format!("Hiding `{name}`")),
+                        action: "Hiding".into(),
+                        secondary: None,
+                    },
+                    &oref,
+                )
                 .await
                 .map_err(Error::KubeError)?;
         }
@@ -130,16 +137,19 @@ impl Document {
 
     // Finalizer cleanup (the object was deleted, ensure nothing is orphaned)
     async fn cleanup(&self, ctx: Arc<Context>) -> Result<Action> {
-        let recorder = ctx.diagnostics.read().await.recorder(ctx.client.clone(), self);
+        let oref = self.object_ref(&());
         // Document doesn't have any real cleanup, so we just publish an event
-        recorder
-            .publish(Event {
-                type_: EventType::Normal,
-                reason: "DeleteRequested".into(),
-                note: Some(format!("Delete `{}`", self.name_any())),
-                action: "Deleting".into(),
-                secondary: None,
-            })
+        ctx.recorder
+            .publish(
+                &Event {
+                    type_: EventType::Normal,
+                    reason: "DeleteRequested".into(),
+                    note: Some(format!("Delete `{}`", self.name_any())),
+                    action: "Deleting".into(),
+                    secondary: None,
+                },
+                &oref,
+            )
             .await
             .map_err(Error::KubeError)?;
         Ok(Action::await_change())
@@ -163,8 +173,8 @@ impl Default for Diagnostics {
     }
 }
 impl Diagnostics {
-    fn recorder(&self, client: Client, doc: &Document) -> Recorder {
-        Recorder::new(client, self.reporter.clone(), doc.object_ref(&()))
+    fn recorder(&self, client: Client) -> Recorder {
+        Recorder::new(client, self.reporter.clone())
     }
 }
 
@@ -193,9 +203,10 @@ impl State {
     }
 
     // Create a Controller Context that can update State
-    pub fn to_context(&self, client: Client) -> Arc<Context> {
+    pub async fn to_context(&self, client: Client) -> Arc<Context> {
         Arc::new(Context {
-            client,
+            client: client.clone(),
+            recorder: self.diagnostics.read().await.recorder(client),
             metrics: self.metrics.clone(),
             diagnostics: self.diagnostics.clone(),
         })
@@ -213,7 +224,7 @@ pub async fn run(state: State) {
     }
     Controller::new(docs, Config::default().any_semantic())
         .shutdown_on_signal()
-        .run(reconcile, error_policy, state.to_context(client))
+        .run(reconcile, error_policy, state.to_context(client).await)
         .filter_map(|x| async move { std::result::Result::ok(x) })
         .for_each(|_| futures::future::ready(()))
         .await;
@@ -293,7 +304,7 @@ mod test {
     #[ignore = "uses k8s current-context"]
     async fn integration_reconcile_should_set_status_and_send_event() {
         let client = kube::Client::try_default().await.unwrap();
-        let ctx = super::State::default().to_context(client.clone());
+        let ctx = super::State::default().to_context(client.clone()).await;
 
         // create a test doc
         let doc = Document::test().finalized().needs_hide();

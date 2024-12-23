@@ -23,7 +23,7 @@ spec:
             description: |-
               Generate the Kubernetes wrapper struct `Document` from our Spec and Status struct
 
-              This provides a hook for generating the CRD yaml (in crdgen.rs)
+              This provides a hook for generating the CRD yaml (in crdgen.rs) NB: CustomResource generates a pub struct Document here To query for documents.kube.rs with kube, use Api<Document>.
             properties:
               content:
                 type: string
