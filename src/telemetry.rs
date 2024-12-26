@@ -25,16 +25,18 @@ fn resource() -> Resource {
 
 #[cfg(feature = "telemetry")]
 fn init_tracer() -> sdktrace::Tracer {
-    use opentelemetry_otlp::WithExportConfig;
+    use opentelemetry_otlp::{SpanExporter, WithExportConfig};
     let endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Needs an otel collector");
-    let exporter = opentelemetry_otlp::new_exporter().tonic().with_endpoint(endpoint);
+    let exporter = SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint(endpoint)
+        .build()
+        .unwrap();
 
-    let provider = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(exporter)
-        .with_trace_config(Config::default().with_resource(resource()))
-        .install_batch(runtime::Tokio)
-        .expect("valid tracer");
+    let provider = sdktrace::TracerProvider::builder()
+        .with_batch_exporter(exporter, runtime::Tokio)
+        .with_resource(resource())
+        .build();
 
     opentelemetry::global::set_tracer_provider(provider.clone());
     provider.tracer("tracing-otel-subscriber")

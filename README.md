@@ -57,7 +57,7 @@ cargo run
 or, with optional telemetry:
 
 ```sh
-OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:55680 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
+OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:4317 RUST_LOG=info,kube=trace,controller=debug cargo run --features=telemetry
 ```
 
 ### In-cluster

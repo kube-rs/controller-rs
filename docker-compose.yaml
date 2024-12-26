@@ -1,0 +1,22 @@
+version: "3"
+services:
+  zipkin:
+    image: openzipkin/zipkin:latest
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx512m -XX:+ExitOnOutOfMemoryError
+    restart: always
+    ports:
+      - "9411:9411"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    restart: always
+    command: >
+      --set=receivers.otlp.protocols.grpc.endpoint=0.0.0.0:4317
+      --set=exporters.zipkin.endpoint=http://zipkin:9411/api/v2/spans
+      --set=service.pipelines.traces.receivers=[otlp]
+      --set=service.pipelines.traces.exporters=[zipkin]
+    ports:
+      - "4317:4317"
+    depends_on:
+      - zipkin
