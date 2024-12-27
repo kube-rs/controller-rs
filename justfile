@@ -39,7 +39,7 @@ compile features="":
     -v cargo-cache:/root/.cargo \
     -v $PWD:/volume \
     -w /volume \
-    -t clux/muslrust:stable \
+    -t clux/muslrust:1.78.0-nightly-2024-02-26 \
     cargo build --release --features={{features}} --bin controller
   cp target/x86_64-unknown-linux-musl/release/controller .
 
