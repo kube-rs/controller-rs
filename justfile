@@ -12,7 +12,8 @@ generate:
 
 # run with opentelemetry
 run-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:55680 RUST_LOG=info,kube=debug,controller=debug cargo run --features=telemetry
+  docker-compose up -d
+  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 RUST_LOG=info,kube=debug,controller=debug cargo run --features=telemetry
 
 # run without opentelemetry
 run:
@@ -30,7 +31,7 @@ test-integration: install-crd
   cargo test -- --ignored
 # run telemetry tests
 test-telemetry:
-  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:55680 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
+  OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored
 
 # compile for musl (for docker image)
 compile features="":
