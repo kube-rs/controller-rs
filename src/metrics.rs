@@ -45,7 +45,7 @@ impl TryFrom<&TraceId> for TraceLabel {
 
 #[derive(Clone)]
 pub struct ReconcileMetrics {
-    pub runs: Family<(), Counter>,
+    pub runs: Counter,
     pub failures: Family<ErrorLabels, Counter>,
     pub duration: HistogramWithExemplars<TraceLabel>,
 }
@@ -53,7 +53,7 @@ pub struct ReconcileMetrics {
 impl Default for ReconcileMetrics {
     fn default() -> Self {
         Self {
-            runs: Family::<(), Counter>::default(),
+            runs: Counter::default(),
             failures: Family::<ErrorLabels, Counter>::default(),
             duration: HistogramWithExemplars::new([0.01, 0.1, 0.25, 0.5, 1., 5., 15., 60.].into_iter()),
         }
@@ -90,7 +90,7 @@ impl ReconcileMetrics {
     }
 
     pub fn count_and_measure(&self, trace_id: &TraceId) -> ReconcileMeasurer {
-        self.runs.get_or_create(&()).inc();
+        self.runs.inc();
         ReconcileMeasurer {
             start: Instant::now(),
             labels: trace_id.try_into().ok(),
