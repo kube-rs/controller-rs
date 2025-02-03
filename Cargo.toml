@@ -32,7 +32,7 @@ tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 k8s-openapi = { version = "0.24.0", features = ["latest"] }
 schemars = { version = "0.8.12", features = ["chrono"] }
 serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.137"
+serde_json = "1.0.138"
 serde_yaml = "0.9.25"
 chrono = { version = "0.4.39", features = ["serde"] }
 tracing = "0.1.41"
