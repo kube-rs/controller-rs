@@ -4,7 +4,7 @@ namespace: "default"
 version: "" # pin a specific version
 
 image:
-  repository: ghcr.io/kube-rs/controller-rs
+  repository: ghcr.io/kube-rs/controller
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

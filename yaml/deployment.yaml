@@ -139,7 +139,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: ghcr.io/kube-rs/controller-rs:0.15.0
+        image: ghcr.io/kube-rs/controller:0.15.0
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
