@@ -153,7 +153,7 @@ jobs:
         with:
           version: v1.31
           k3d-name: kube
-          k3d-args: "--no-lb --no-rollback --registry-create 'reg' --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
+          k3d-args: "--no-lb --no-rollback --registry-create reg --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
       - run: kubectl apply -f yaml/crd.yaml
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -164,6 +164,8 @@ jobs:
           path: /tmp
       - name: Load docker image from tarball
         run: docker load --input /tmp/image.tar
+      - name: Load image into k3d registry
+        run: k3d image import ghcr.io/kube-rs/controller:latest --cluster kube
       - name: helm template | kubctl apply
         run: |
           apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
