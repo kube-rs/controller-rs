@@ -31,7 +31,7 @@ jobs:
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
-            type=raw,value=test,enable=${{ !endsWith(github.ref, 'main')
+            type=raw,value=test,enable=${{ !endsWith(github.ref, '/main')}}
 
       - name: Docker login on main origin
         uses: docker/login-action@v3
