@@ -34,7 +34,7 @@ jobs:
 
       - name: Docker login on main origin
         uses: docker/login-action@v3
-        # if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -66,8 +66,7 @@ jobs:
           context: .
           cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max
-          # push: ${{ github.ref == 'refs/heads/main' }}
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
@@ -128,7 +127,7 @@ jobs:
 
       - name: Docker login on main origin
         uses: docker/login-action@v3
-        #if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -140,8 +139,7 @@ jobs:
           context: .
           cache-from: type=gha,scope=otel
           cache-to: type=gha,scope=otel,mode=max
-          # push: ${{ github.ref == 'refs/heads/main' }}
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
