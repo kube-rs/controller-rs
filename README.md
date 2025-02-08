@@ -1,7 +1,5 @@
 ## controller-rs
 [![ci](https://github.com/kube-rs/controller-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/kube-rs/controller-rs/actions/workflows/ci.yml)
-[![docker image](https://img.shields.io/docker/pulls/clux/controller.svg)](
-https://hub.docker.com/r/clux/controller/tags/)
 
 A rust kubernetes reference controller for a [`Document` resource](https://github.com/kube-rs/controller-rs/blob/main/yaml/crd.yaml) using [kube](https://github.com/kube-rs/kube/), with observability instrumentation.
 
@@ -25,6 +23,8 @@ helm template charts/doc-controller | kubectl apply -f -
 kubectl wait --for=condition=available deploy/doc-controller --timeout=30s
 kubectl port-forward service/doc-controller 8080:80
 ```
+
+The helm chart sets up the [container](https://github.com/kube-rs/controller-rs/pkgs/container/controller) built from this repository.
 
 ### Opentelemetry
 
