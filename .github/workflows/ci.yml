@@ -31,6 +31,7 @@ jobs:
             type=pep440,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=pr
+            type=raw,value=test,enable={{is_default_branch != true}}
 
       - name: Docker login on main origin
         uses: docker/login-action@v3
@@ -165,12 +166,12 @@ jobs:
       # - name: Load docker image from tarball
         # run: docker load --input /tmp/image.tar
       - name: Load image into k3d registry
-        run: k3d image import /tmp/image.tar --cluster kube
+        run: k3d image import /tmp/image.tar --cluster kube --verbose
       - name: helm template | kubctl apply
         run: |
           apiserver="$(kubectl get endpoints kubernetes -ojson | jq '.subsets[0].addresses[0].ip' -r)"
           helm template charts/doc-controller \
-            --set version=latest \
+            --set version=test \
             --set networkPolicy.enabled=true \
             --set networkPolicy.apiserver.0=${apiserver}/32 \
             | kubectl apply -f -
