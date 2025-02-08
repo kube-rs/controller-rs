@@ -153,7 +153,7 @@ jobs:
         with:
           version: v1.31
           k3d-name: kube
-          k3d-args: "--no-lb --no-rollback --registry-create --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
+          k3d-args: "--no-lb --no-rollback --registry-create 'reg' --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
       - run: kubectl apply -f yaml/crd.yaml
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
