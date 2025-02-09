@@ -8,8 +8,10 @@ cfg = config.parse()
 features = cfg.get('features', "")
 print("compiling with features: {}".format(features))
 
+IMG = 'kube-rs/controller'
 local_resource('compile', 'just compile %s' % features)
-docker_build('clux/controller', '.', dockerfile='Dockerfile')
+docker_build(IMG, '.')
+# NB: for the image to be pullable by kubernetes via k3d
 k8s_yaml('yaml/crd.yaml')
-k8s_yaml('yaml/deployment.yaml')
+k8s_yaml(helm('./charts/doc-controller', set=['image.repository=' + IMG]))
 k8s_resource('doc-controller', port_forwards=8080)
