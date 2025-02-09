@@ -63,7 +63,7 @@ OPENTELEMETRY_ENDPOINT_URL=https://0.0.0.0:4317 RUST_LOG=info,kube=trace,control
 ### In-cluster
 For prebuilt, edit the [chart values](./charts/doc-controller/values.yaml) or [snapshotted yaml](./yaml/deployment.yaml) and apply as you see fit (like above).
 
-To develop by building and deploying the image quickly, we recommend using [tilt](https://tilt.dev/), via `tilt up` instead.
+To develop by building/reloading the deployment in k3d quickly, you can use [`tilt up`](https://tilt.dev/).
 
 ## Usage
 In either of the run scenarios, your app is listening on port `8080`, and it will observe `Document` events.
