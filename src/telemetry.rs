@@ -1,17 +1,20 @@
 #![allow(unused_imports)] // some used only for telemetry feature
 use opentelemetry::trace::{TraceId, TracerProvider};
-use opentelemetry_sdk::{runtime, trace as sdktrace, trace::Config, Resource};
+use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
+use sdktrace::{Config, SdkTracerProvider};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
 pub fn get_trace_id() -> TraceId {
     use opentelemetry::trace::TraceContextExt as _; // opentelemetry::Context -> opentelemetry::trace::Span
     use tracing_opentelemetry::OpenTelemetrySpanExt as _; // tracing::Span to opentelemetry::Context
-    tracing::Span::current()
+    TraceId::INVALID
+    /*tracing::Span::current()
         .context()
         .span()
         .span_context()
         .trace_id()
+    */
 }
 
 #[cfg(feature = "telemetry")]
@@ -24,7 +27,7 @@ fn resource() -> Resource {
 }
 
 #[cfg(feature = "telemetry")]
-fn init_tracer() -> sdktrace::Tracer {
+fn init_tracer() -> SdkTracerProvider {
     use opentelemetry_otlp::{SpanExporter, WithExportConfig};
     let endpoint = std::env::var("OPENTELEMETRY_ENDPOINT_URL").expect("Needs an otel collector");
     let exporter = SpanExporter::builder()
@@ -33,9 +36,9 @@ fn init_tracer() -> sdktrace::Tracer {
         .build()
         .unwrap();
 
-    let provider = sdktrace::TracerProvider::builder()
-        .with_batch_exporter(exporter, runtime::Tokio)
+    let provider = SdkTracerProvider::builder()
         .with_resource(resource())
+        .with_batch_exporter(exporter)
         .build();
 
     opentelemetry::global::set_tracer_provider(provider.clone());
