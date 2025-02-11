@@ -17,10 +17,10 @@ pub fn get_trace_id() -> TraceId {
 #[cfg(feature = "telemetry")]
 fn resource() -> Resource {
     use opentelemetry::KeyValue;
-    Resource::new([
-        KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
-        KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-    ])
+    Resource::builder()
+        .with_service_name(env!("CARGO_PKG_NAME"))
+        .with_attribute(KeyValue::new("service.version", env!("CARGO_PKG_VERSION")))
+        .build()
 }
 
 #[cfg(feature = "telemetry")]
