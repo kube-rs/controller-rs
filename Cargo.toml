@@ -30,7 +30,7 @@ actix-web = "4.4.0"
 futures = "0.3.31"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 k8s-openapi = { version = "0.24.0", features = ["latest"] }
-schemars = { version = "0.8.12", features = ["chrono"] }
+schemars = { version = "0.8.22", features = ["chrono"] }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.25"
