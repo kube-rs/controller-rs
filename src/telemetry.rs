@@ -1,7 +1,7 @@
 #![allow(unused_imports)] // some used only for telemetry feature
 use opentelemetry::trace::{TraceId, TracerProvider};
-use opentelemetry_sdk::{Resource, runtime, trace as sdktrace};
-use sdktrace::{Config, SdkTracer, SdkTracerProvider};
+use opentelemetry_sdk::{Resource, trace as sdktrace};
+use sdktrace::{SdkTracer, SdkTracerProvider};
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
