@@ -2,7 +2,7 @@
 name = "controller"
 version = "0.16.0"
 authors = ["clux <sszynrae@gmail.com>"]
-edition = "2021"
+edition = "2024"
 default-run = "controller"
 license = "Apache-2.0"
 publish = false
