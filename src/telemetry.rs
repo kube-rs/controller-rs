@@ -36,12 +36,10 @@ fn init_tracer() -> SdkTracer {
 
     let provider = SdkTracerProvider::builder()
         .with_resource(resource())
-        .with_batch_exporter(exporter);
-    // .build();
+        .with_batch_exporter(exporter)
+        .build();
 
-    // opentelemetry::global::set_tracer_provider(provider.clone());
-    // provider.tracer("tracing-otel-subscriber")
-    provider.build().tracer("tracing-otel-subscriber")
+    provider.tracer("tracing-otel-subscriber")
 }
 
 /// Initialize tracing
