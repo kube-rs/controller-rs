@@ -1,16 +1,16 @@
-use crate::{telemetry, Error, Metrics, Result};
+use crate::{Error, Metrics, Result, telemetry};
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use kube::{
+    CustomResource, Resource,
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     runtime::{
         controller::{Action, Controller},
         events::{Event, EventType, Recorder, Reporter},
-        finalizer::{finalizer, Event as Finalizer},
+        finalizer::{Event as Finalizer, finalizer},
         watcher::Config,
     },
-    CustomResource, Resource,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -233,9 +233,9 @@ pub async fn run(state: State) {
 // Mock tests relying on fixtures.rs and its primitive apiserver mocks
 #[cfg(test)]
 mod test {
-    use super::{error_policy, reconcile, Context, Document};
+    use super::{Context, Document, error_policy, reconcile};
     use crate::{
-        fixtures::{timeout_after_1s, Scenario},
+        fixtures::{Scenario, timeout_after_1s},
         metrics::ErrorLabels,
     };
     use std::sync::Arc;

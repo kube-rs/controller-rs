@@ -1,8 +1,8 @@
 //! Helper methods only available for tests
-use crate::{Context, Document, DocumentSpec, DocumentStatus, Result, DOCUMENT_FINALIZER};
+use crate::{Context, DOCUMENT_FINALIZER, Document, DocumentSpec, DocumentStatus, Result};
 use assert_json_diff::assert_json_include;
 use http::{Request, Response};
-use kube::{client::Body, runtime::events::Recorder, Client, Resource, ResourceExt};
+use kube::{Client, Resource, ResourceExt, client::Body, runtime::events::Recorder};
 use std::sync::Arc;
 
 impl Document {
