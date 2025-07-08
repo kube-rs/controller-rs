@@ -12,7 +12,6 @@ generate:
 
 # run with opentelemetry
 run-telemetry:
-  docker-compose up -d
   OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 RUST_LOG=info,kube=debug,controller=debug cargo run --features=telemetry
 
 # run without opentelemetry
@@ -58,4 +57,4 @@ build-otel: (_build "telemetry")
 # local helper for test-telemetry and run-telemetry
 # forward grpc otel port from svc/promstack-tempo in monitoring
 forward-tempo:
-  kubectl port-forward -n monitoring svc/promstack-tempo 55680:4317
+  kubectl port-forward -n monitoring svc/promstack-tempo 4317:4317

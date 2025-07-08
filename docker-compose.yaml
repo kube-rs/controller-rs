@@ -1,3 +1,4 @@
+# compose for just run-telemetry
 version: "3"
 services:
   zipkin:
