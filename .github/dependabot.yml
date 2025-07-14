@@ -23,6 +23,7 @@ updates:
         patterns:
           - kube
           - k8s-openapi
+          - schemars
       otel:
         patterns:
           - tracing-opentelemetry
