@@ -33,7 +33,7 @@ tokio = { version = "1.46.1", features = ["macros", "rt-multi-thread"] }
 k8s-openapi = { git = "https://github.com/Arnavion/k8s-openapi.git", rev = "e9a9eaf", features=["latest"] }
 schemars = "1"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde_json = "1.0.141"
 serde_yaml = "0.9.25"
 chrono = { version = "0.4.41", features = ["serde"] }
 tracing = "0.1.41"
