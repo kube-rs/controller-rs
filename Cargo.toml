@@ -42,7 +42,7 @@ tracing-opentelemetry = "0.31.0"
 opentelemetry = { version = "0.30", features = ["trace"] }
 opentelemetry-otlp = { version = "0.30", optional = true, default-features = false, features = ["trace", "grpc-tonic"] }
 opentelemetry_sdk = { version = "0.30", features = ["rt-tokio"] }
-thiserror = "2.0.12"
+thiserror = "2.0.15"
 anyhow = "1.0.99"
 prometheus-client = "0.24.0"
 
