@@ -38,9 +38,9 @@ chrono = { version = "0.4.42", features = ["serde"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 tracing-opentelemetry = "0.31.0"
-opentelemetry = { version = "0.30", features = ["trace"] }
-opentelemetry-otlp = { version = "0.30", optional = true, default-features = false, features = ["trace", "grpc-tonic"] }
-opentelemetry_sdk = { version = "0.30", features = ["rt-tokio"] }
+opentelemetry = { version = "0.31", features = ["trace"] }
+opentelemetry-otlp = { version = "0.31", optional = true, default-features = false, features = ["trace", "grpc-tonic"] }
+opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
 thiserror = "2.0.16"
 anyhow = "1.0.100"
 prometheus-client = "0.24.0"
