@@ -16,7 +16,7 @@ jobs:
   docker-base:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Build and push with docker buildx
       - name: Setup docker buildx
@@ -90,7 +90,7 @@ jobs:
   docker-otel:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Build and push with docker buildx
       - name: Setup docker buildx
@@ -152,7 +152,7 @@ jobs:
     # (also the e2e test assumes tag :test which is not available elsewhere)
     if: github.ref != 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: nolar/setup-k3d-k3s@v1
         with:
           version: v1.31
@@ -188,7 +188,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
       - uses: dtolnay/rust-toolchain@stable
@@ -206,7 +206,7 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -225,7 +225,7 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
       - uses: dtolnay/rust-toolchain@stable
