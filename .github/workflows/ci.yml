@@ -82,7 +82,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image.tar
 
       - name: Upload base docker image as artifact for e2e tests
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: controller-image
           path: /tmp/image.tar
@@ -162,7 +162,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Download docker image artifact from docker job
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: controller-image
           path: /tmp
