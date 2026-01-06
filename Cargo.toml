@@ -29,12 +29,12 @@ telemetry = ["opentelemetry-otlp"]
 actix-web = "4.12.1"
 futures = "0.3.31"
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
-k8s-openapi = { version = "0.26.1", features = ["latest"] }
+# k8s-openapi = { version = "0.26.1", features = ["latest"] }
+k8s-openapi = { rev="f21871c458ce6bfd7a78d2e07693cadaee0e617e", features=["latest"], git="https://github.com/Arnavion/k8s-openapi" }
 schemars = "1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.148"
 serde_yaml = "0.9.25"
-chrono = { version = "0.4.42", features = ["serde"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tracing-opentelemetry = "0.32.0"
@@ -44,6 +44,7 @@ opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
 thiserror = "2.0.17"
 anyhow = "1.0.100"
 prometheus-client = "0.24.0"
+jiff = "0.2.18"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
@@ -53,10 +54,10 @@ tower-test = "0.4.0"
 
 [dependencies.kube]
 features = ["runtime", "client", "derive"]
-version = "2.0.1"
+# version = "2.0.1"
 
 # testing new releases - ignore
-# git = "https://github.com/kube-rs/kube.git"
-# branch = "main"
+git = "https://github.com/kube-rs/kube.git"
+branch = "main"
 # rev = "896ba6798ddac323dd464cc51938a6c818276f65"
 # path = "../kube/kube"
