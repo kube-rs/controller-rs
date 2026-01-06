@@ -1,6 +1,6 @@
 use crate::{Error, Metrics, Result, telemetry};
-use chrono::{DateTime, Utc};
 use futures::StreamExt;
+use jiff::Timestamp;
 use kube::{
     CustomResource, Resource,
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
@@ -67,7 +67,7 @@ async fn reconcile(doc: Arc<Document>, ctx: Arc<Context>) -> Result<Action> {
         Span::current().record("trace_id", field::display(&trace_id));
     }
     let _timer = ctx.metrics.reconcile.count_and_measure(&trace_id);
-    ctx.diagnostics.write().await.last_event = Utc::now();
+    ctx.diagnostics.write().await.last_event = Timestamp::now();
     let ns = doc.namespace().unwrap(); // doc is namespace scoped
     let docs: Api<Document> = Api::namespaced(ctx.client.clone(), &ns);
 
@@ -160,14 +160,14 @@ impl Document {
 #[derive(Clone, Serialize)]
 pub struct Diagnostics {
     #[serde(deserialize_with = "from_ts")]
-    pub last_event: DateTime<Utc>,
+    pub last_event: Timestamp,
     #[serde(skip)]
     pub reporter: Reporter,
 }
 impl Default for Diagnostics {
     fn default() -> Self {
         Self {
-            last_event: Utc::now(),
+            last_event: Timestamp::now(),
             reporter: "doc-controller".into(),
         }
     }
