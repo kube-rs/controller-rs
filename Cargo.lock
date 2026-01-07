@@ -1057,7 +1057,7 @@ dependencies = [
  "hyper",
  "libc",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -1214,7 +1214,7 @@ dependencies = [
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1312,7 +1312,7 @@ dependencies = [
 [[package]]
 name = "kube"
 version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#61c65dc0cc38d17b189cd6f4758907b1a0fb422a"
+source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1324,7 +1324,7 @@ dependencies = [
 [[package]]
 name = "kube-client"
 version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#61c65dc0cc38d17b189cd6f4758907b1a0fb422a"
+source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
 dependencies = [
  "base64",
  "bytes",
@@ -1358,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "kube-core"
 version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#61c65dc0cc38d17b189cd6f4758907b1a0fb422a"
+source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
 dependencies = [
  "derive_more",
  "form_urlencoded",
@@ -1376,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "kube-derive"
 version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#61c65dc0cc38d17b189cd6f4758907b1a0fb422a"
+source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1389,7 +1389,7 @@ dependencies = [
 [[package]]
 name = "kube-runtime"
 version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#61c65dc0cc38d17b189cd6f4758907b1a0fb422a"
+source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
 dependencies = [
  "ahash",
  "async-broadcast",
