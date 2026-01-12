@@ -29,8 +29,7 @@ impl Document {
     /// Modify document to set a deletion timestamp
     pub fn needs_delete(mut self) -> Self {
         let now: jiff::Timestamp = "2017-04-02T12:50:32Z".parse().unwrap();
-        use k8s_openapi::apimachinery::pkg::apis::meta::v1::Time;
-        self.meta_mut().deletion_timestamp = Some(Time(now));
+        self.meta_mut().deletion_timestamp = Some(now.into());
         self
     }
 
