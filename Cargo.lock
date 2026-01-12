@@ -1057,7 +1057,7 @@ dependencies = [
  "hyper",
  "libc",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -1300,8 +1300,9 @@ dependencies = [
 
 [[package]]
 name = "k8s-openapi"
-version = "0.26.1"
-source = "git+https://github.com/Arnavion/k8s-openapi?rev=f21871c458ce6bfd7a78d2e07693cadaee0e617e#f21871c458ce6bfd7a78d2e07693cadaee0e617e"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05a6d6f3611ad1d21732adbd7a2e921f598af6c92d71ae6e2620da4b67ee1f0d"
 dependencies = [
  "base64",
  "jiff",
@@ -1311,8 +1312,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dae7229247e4215781e5c5104a056e1e2163943e577f9084cf8bba7b5248f7a"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1323,8 +1325,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "010875e291a9c0a4e076f4f9c35b97d82fd2372cb3bc713252c3d08b7e73ce5b"
 dependencies = [
  "base64",
  "bytes",
@@ -1357,8 +1360,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ac76281aa698dd34111e25b21f5f6561932a30feabab5357152be273f8a81bb"
 dependencies = [
  "derive_more",
  "form_urlencoded",
@@ -1375,8 +1379,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "599c09721efcccc0e6a26e93df28c587da60ff5e099c657626fff2af0ae4cbb8"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1388,8 +1393,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "2.0.1"
-source = "git+https://github.com/kube-rs/kube.git?branch=main#178e4ae7b85c80d565801b764b7b77f0ca313967"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6db43d26700f564baf850f681f3cb0f1195d2699bd379bfa70750ecec4dcb209"
 dependencies = [
  "ahash",
  "async-broadcast",
