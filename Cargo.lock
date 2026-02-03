@@ -1312,9 +1312,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dae7229247e4215781e5c5104a056e1e2163943e577f9084cf8bba7b5248f7a"
+checksum = "f96b537b4c4f61fc183594edbecbbefa3037e403feac0701bb24e6eff78e0034"
 dependencies = [
  "k8s-openapi",
  "kube-client",
@@ -1325,9 +1325,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "010875e291a9c0a4e076f4f9c35b97d82fd2372cb3bc713252c3d08b7e73ce5b"
+checksum = "af97b8b696eb737e5694f087c498ca725b172c2a5bc3a6916328d160225537ee"
 dependencies = [
  "base64",
  "bytes",
@@ -1360,9 +1360,9 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ac76281aa698dd34111e25b21f5f6561932a30feabab5357152be273f8a81bb"
+checksum = "e7aeade7d2e9f165f96b3c1749ff01a8e2dc7ea954bd333bcfcecc37d5226bdd"
 dependencies = [
  "derive_more",
  "form_urlencoded",
@@ -1379,9 +1379,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "599c09721efcccc0e6a26e93df28c587da60ff5e099c657626fff2af0ae4cbb8"
+checksum = "c98f59f4e68864624a0b993a1cc2424439ab7238eaede5c299e89943e2a093ff"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1393,9 +1393,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db43d26700f564baf850f681f3cb0f1195d2699bd379bfa70750ecec4dcb209"
+checksum = "fc158473d6d86ec22692874bd5ddccf07474eab5c6bb41f226c522e945da5244"
 dependencies = [
  "ahash",
  "async-broadcast",
@@ -2043,9 +2043,9 @@ dependencies = [
 
 [[package]]
 name = "schemars"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54e910108742c57a770f492731f99be216a52fadd361b06c8fb59d74ccc267d2"
+checksum = "a2b42f36aa1cd011945615b92222f6bf73c599a102a300334cd7f8dbeec726cc"
 dependencies = [
  "dyn-clone",
  "ref-cast",
@@ -2056,9 +2056,9 @@ dependencies = [
 
 [[package]]
 name = "schemars_derive"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4908ad288c5035a8eb12cfdf0d49270def0a268ee162b75eeee0f85d155a7c45"
+checksum = "7d115b50f4aaeea07e79c1912f645c7513d81715d0420f8bc77a18c6260b307f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2563,6 +2563,7 @@ dependencies = [
  "http-body",
  "mime",
  "pin-project-lite",
+ "tower",
  "tower-layer",
  "tower-service",
  "tracing",
