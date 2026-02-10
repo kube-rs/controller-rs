@@ -43,7 +43,7 @@ opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
 thiserror = "2.0.18"
 anyhow = "1.0.100"
 prometheus-client = "0.24.0"
-jiff = "0.2.18"
+jiff = "0.2.19"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
