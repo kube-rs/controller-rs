@@ -1,11 +1,10 @@
 #![allow(unused_imports, unused_variables)]
 use actix_web::{
-    App, HttpRequest, HttpResponse, HttpServer, Responder, get, middleware, put, web,
-    web::Data,
+    App, HttpRequest, HttpResponse, HttpServer, Responder, get, middleware, put, web, web::Data,
 };
+pub use controller::{self, State, telemetry};
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::EnvFilter;
-pub use controller::{self, State, telemetry};
 
 #[get("/metrics")]
 async fn metrics(c: Data<State>, _req: HttpRequest) -> impl Responder {
