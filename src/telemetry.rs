@@ -2,7 +2,7 @@
 use opentelemetry::trace::{TraceId, TracerProvider};
 use opentelemetry_sdk::{Resource, trace as sdktrace};
 use sdktrace::{SdkTracer, SdkTracerProvider};
-use tracing_subscriber::{EnvFilter, Registry, prelude::*};
+use tracing_subscriber::{EnvFilter, Registry, prelude::*, reload};
 
 ///  Fetch an opentelemetry::trace::TraceId as hex through the full tracing stack
 pub fn get_trace_id() -> TraceId {
@@ -42,8 +42,10 @@ fn init_tracer() -> SdkTracer {
     provider.tracer("tracing-otel-subscriber")
 }
 
+pub type LogFilterHandle = reload::Handle<EnvFilter, Registry>;
+
 /// Initialize tracing
-pub async fn init() {
+pub async fn init() -> LogFilterHandle {
     // Setup tracing layers
     #[cfg(feature = "telemetry")]
     let otel = tracing_opentelemetry::OpenTelemetryLayer::new(init_tracer());
@@ -52,6 +54,7 @@ pub async fn init() {
     let env_filter = EnvFilter::try_from_default_env()
         .or(EnvFilter::try_new("info"))
         .unwrap();
+    let (env_filter, reload_handle) = reload::Layer::new(env_filter);
 
     // Decide on layers
     let reg = Registry::default();
@@ -59,6 +62,8 @@ pub async fn init() {
     reg.with(env_filter).with(logger).with(otel).init();
     #[cfg(not(feature = "telemetry"))]
     reg.with(env_filter).with(logger).init();
+
+    reload_handle
 }
 
 #[cfg(test)]
