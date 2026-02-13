@@ -204,10 +204,7 @@ jobs:
           clippy_flags: --all-features
 
       - uses: azure/setup-helm@v4
-      - name: Install kubeconform
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
-          sudo mv kubeconform /usr/local/bin/
+      - uses: bmuschko/setup-kubeconform@v1
       - uses: extractions/setup-just@v3
       - name: Lint helm chart
         run: just lint-helm
