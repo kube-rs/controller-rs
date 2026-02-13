@@ -109,6 +109,18 @@ $ curl 0.0.0.0:8080/
 
 The metrics will be scraped by prometheus if you setup a`ServiceMonitor` for it.
 
+### Runtime Log Level
+
+You can change the log level at runtime without restarting:
+
+```sh
+curl -X PUT 0.0.0.0:8080/log-level \
+  -H 'Content-Type: application/json' \
+  -d '{"filter": "controller=debug,kube=warn,info"}'
+```
+
+The `filter` value follows the [`RUST_LOG` / `EnvFilter` directive syntax](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html).
+
 ### Events
 The example `reconciler` only checks the `.spec.hidden` bool. If it does, it updates the `.status` object to reflect whether or not the instance `is_hidden`. It also sends a Kubernetes event associated with the controller. It is visible at the bottom of `kubectl describe doc samuel`.
 
