@@ -203,6 +203,16 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           clippy_flags: --all-features
 
+      - uses: azure/setup-helm@v4
+      - name: Lint helm chart
+        run: helm lint charts/doc-controller
+      - name: Validate kubernetes schemas
+        run: helm template charts/doc-controller > manifests.yaml
+      - uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: '/kubeconform'
+          args: "-strict -summary manifests.yaml"
+
   integration:
     runs-on: ubuntu-latest
     steps:

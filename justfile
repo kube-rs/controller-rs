@@ -22,6 +22,11 @@ run:
 fmt:
   cargo +nightly fmt
 
+# lint helm chart and validate kubernetes schemas
+lint-helm:
+  helm lint charts/doc-controller
+  helm template charts/doc-controller | kubeconform --strict --summary
+
 # run unit tests
 test-unit:
   cargo test
