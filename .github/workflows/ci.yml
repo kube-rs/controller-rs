@@ -204,10 +204,14 @@ jobs:
           clippy_flags: --all-features
 
       - uses: azure/setup-helm@v4
-      - uses: bmuschko/setup-kubeconform@v1
-      - uses: extractions/setup-just@v3
       - name: Lint helm chart
-        run: just lint-helm
+        run: helm lint charts/doc-controller
+      - name: Validate kubernetes schemas
+        run: helm template charts/doc-controller > /tmp/manifests.yaml
+      - uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: '/kubeconform'
+          args: "-strict -summary /tmp/manifests.yaml"
 
   integration:
     runs-on: ubuntu-latest
