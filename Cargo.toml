@@ -47,6 +47,7 @@ jiff = "0.2.20"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
+envtest = "0.1.2"
 http = "1"
 hyper = "1"
 tower-test = "0.4.0"

@@ -213,25 +213,6 @@ jobs:
           entrypoint: '/kubeconform'
           args: "-strict -summary manifests.yaml"
 
-  integration:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: nolar/setup-k3d-k3s@v1
-        with:
-          version: v1.31
-          k3d-name: kube
-          k3d-args: "--no-lb --no-rollback --k3s-arg --disable=traefik,servicelb,metrics-server@server:*"
-
-      - name: Build workspace
-        run: cargo build
-      - name: Install crd
-        run: cargo run --bin crdgen | kubectl apply -f -
-      - name: Run all default features integration library tests
-        run: cargo test --lib --all -- --ignored
-
   unit:
     runs-on: ubuntu-latest
     steps:
@@ -239,6 +220,11 @@ jobs:
         with:
           fetch-depth: 2
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install go to run envtest
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: "target/release/**/*.sum"
       - uses: Swatinem/rust-cache@v2
 
       # Real CI work starts here
