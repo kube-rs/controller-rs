@@ -30,9 +30,7 @@ lint-helm:
 # run unit tests
 test-unit:
   cargo test
-# run integration tests
-test-integration: install-crd
-  cargo test -- --ignored
+
 # run telemetry tests
 test-telemetry:
   OPENTELEMETRY_ENDPOINT_URL=http://127.0.0.1:4317 cargo test --lib --all-features -- get_trace_id_returns_valid_traces --ignored

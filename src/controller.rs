@@ -238,6 +238,11 @@ mod test {
         fixtures::{Scenario, timeout_after_1s},
         metrics::ErrorLabels,
     };
+    use envtest::Environment;
+    use kube::{
+        CustomResourceExt,
+        api::{Api, ListParams, Patch, PatchParams},
+    };
     use std::sync::Arc;
 
     #[tokio::test]
@@ -299,11 +304,11 @@ mod test {
     }
 
     // Integration test without mocks
-    use kube::api::{Api, ListParams, Patch, PatchParams};
     #[tokio::test]
-    #[ignore = "uses k8s current-context"]
     async fn integration_reconcile_should_set_status_and_send_event() {
-        let client = kube::Client::try_default().await.unwrap();
+        let env = Environment::default().with_crds(vec![Document::crd()]).unwrap();
+        let server = env.create().unwrap();
+        let client = server.client().unwrap();
         let ctx = super::State::default().to_context(client.clone()).await;
 
         // create a test doc
