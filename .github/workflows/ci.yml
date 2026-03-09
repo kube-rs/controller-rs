@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Configure tags based on git tags + latest
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/controller
@@ -97,7 +97,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Configure tags based on git tags for otel
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/controller
