@@ -203,7 +203,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           clippy_flags: --all-features
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - name: Lint helm chart
         run: helm lint charts/doc-controller
       - name: Validate kubernetes schemas
