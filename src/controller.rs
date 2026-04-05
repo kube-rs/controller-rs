@@ -307,7 +307,7 @@ mod test {
     #[tokio::test]
     async fn integration_reconcile_should_set_status_and_send_event() {
         let env = Environment::default().with_crds(vec![Document::crd()]).unwrap();
-        let server = env.create().unwrap();
+        let server = env.create().await.unwrap();
         let client = server.client().unwrap();
         let ctx = super::State::default().to_context(client.clone()).await;
 
