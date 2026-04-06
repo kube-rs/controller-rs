@@ -42,7 +42,7 @@ opentelemetry-otlp = { version = "0.31", optional = true, default-features = fal
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
 thiserror = "2.0.18"
 anyhow = "1.0.101"
-prometheus-client = "0.24.0"
+prometheus-client = "0.24.1"
 jiff = "0.2.23"
 
 [dev-dependencies]
