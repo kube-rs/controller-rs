@@ -62,7 +62,7 @@ jobs:
           cp target/x86_64-unknown-linux-musl/release/controller .
 
       - name: Docker buildx and push with base features
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           cache-from: type=gha,scope=base
@@ -73,7 +73,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Persist base image build to a tarball
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
@@ -135,7 +135,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker buildx and push with telemetry
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           cache-from: type=gha,scope=otel
