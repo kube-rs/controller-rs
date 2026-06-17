@@ -236,6 +236,10 @@ jobs:
         run: cargo run --bin crdgen > yaml/crd.yaml
       - name: Generate deployment.yaml
         run: helm template charts/doc-controller > yaml/deployment.yaml
+      - uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: '/kubeconform'
+          args: "-summary -output json yaml/"
       - name: Ensure generated output is committed
         run: |
           if ! git diff --exit-code yaml/; then
