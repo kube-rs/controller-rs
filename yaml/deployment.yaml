@@ -8,7 +8,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.16.0"
+    app.kubernetes.io/version: "0.16.1"
 spec:
   podSelector:
     matchLabels:
@@ -48,6 +48,7 @@ spec:
     ports:
     - port: http
       protocol: TCP
+
 ---
 # Source: doc-controller/templates/rbac.yaml
 # Scoped service account
@@ -58,7 +59,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.16.0"
+    app.kubernetes.io/version: "0.16.1"
   namespace: default
 automountServiceAccountToken: true
 ---
@@ -90,6 +91,7 @@ roleRef:
   kind: ClusterRole
   name: doc-controller
   apiGroup: rbac.authorization.k8s.io
+
 ---
 # Source: doc-controller/templates/service.yaml
 # Expose the http port of the service
@@ -101,7 +103,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.16.0"
+    app.kubernetes.io/version: "0.16.1"
 spec:
   type: ClusterIP
   ports:
@@ -111,6 +113,7 @@ spec:
     name: http
   selector:
     app: doc-controller
+
 ---
 # Source: doc-controller/templates/deployment.yaml
 apiVersion: apps/v1
@@ -121,7 +124,7 @@ metadata:
   labels:
     app: doc-controller
     app.kubernetes.io/name: doc-controller
-    app.kubernetes.io/version: "0.16.0"
+    app.kubernetes.io/version: "0.16.1"
 spec:
   replicas: 1
   selector:
@@ -139,7 +142,7 @@ spec:
         {}
       containers:
       - name: doc-controller
-        image: ghcr.io/kube-rs/controller:0.16.0
+        image: ghcr.io/kube-rs/controller:0.16.1
         imagePullPolicy: IfNotPresent
         securityContext:
           {}
