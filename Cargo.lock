@@ -1072,9 +1072,9 @@ dependencies = [
 
 [[package]]
 name = "envtest"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "335f63e79a0ede0843f7c3d6073c2db74ef1e57016e712d89ecfd9e50a19ceb7"
+checksum = "96cb3391c91509df883cbf2354ce838236fb998f9342a92b1c2986009e09953d"
 dependencies = [
  "k8s-openapi",
  "kube",
